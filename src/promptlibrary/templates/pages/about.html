@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}<article class="page-content prose-page">
+<h1>PromptLibrary</h1><p class="version-label">Version {{ version }}</p>
+<p>A self-hosted library for prompts and ordered workflows, with version history, portable snapshots and an MCP interface for agents.</p>
+<h2>What runs here</h2><p>Python, FastAPI and SQLite provide the application and storage. Pages are rendered on the server, with local JavaScript for navigation, confirmations and clipboard actions. There are no required third-party frontend requests.</p>
+<p>Workflow runs record inputs and outputs. They do not call an AI provider. Use your chosen tool or an MCP-connected agent as the runner.</p>
+<h2>Licence</h2><p>PromptLibrary v1 is distributed under the <strong>GNU General Public License, version 3 or later</strong> (GPL-3.0-or-later). <a href="/static/LICENSE.txt">Read the licence</a>. Earlier MIT-licensed material and third-party notices are retained in the source distribution.</p>
+<h2>Access and privacy</h2><p>PromptLibrary is a single-library, single-operator application. Anyone with access to its web account or local MCP process can read and change the library, including notes and saved outputs. It does not provide per-user permissions or tenant isolation.</p><p><a href="/help" data-nav>Open the user guide</a> for setup, backups, agents and troubleshooting.</p>
+</article>{% endblock %}

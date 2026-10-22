@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-content">
+<h1>Settings</h1>
+<details open id="status-settings"><summary>Statuses</summary><p>Names, colours and order apply to prompts and workflows. Status keys remain stable for agents and saved history.</p>
+  {% for status in statuses %}<div class="setting-card">
+    <form action="/settings/statuses/{{ status.key }}/save" method="post" data-submit data-dirty-watch aria-label="Edit {{ status.name }} status" class="inline-form">
+      <label>Name<input name="name" value="{{ status.name }}" required maxlength="60"></label><label>Colour<input name="colour" type="color" value="{{ status.colour }}"></label><label>Order<input name="sort_order" type="number" value="{{ status.sort_order }}" min="-10000" max="10000"></label><button type="submit">Save</button>
+    </form><small class="muted">Key: <code>{{ status.key }}</code></small>
+    {% if status.key not in ['draft','staged','published'] %}<form action="/settings/statuses/{{ status.key }}/delete" method="post" data-submit data-confirm="Delete this unused status? Statuses used by items or history cannot be deleted."><button type="submit" class="danger subtle">Delete status</button></form>{% endif %}
+  </div>{% endfor %}
+  <h2>Add status</h2><form action="/settings/statuses" method="post" data-submit data-dirty-watch class="inline-form"><label>Name<input name="name" required maxlength="60"></label><label>Colour<input name="colour" type="color" value="#6366f1"></label><label>Order<input name="sort_order" type="number" value="3" min="-10000" max="10000"></label><button class="primary" type="submit">Add status</button></form>
+</details>
+<details id="category-settings"><summary>Categories</summary>
+  {% for category in categories %}<div class="setting-card">
+    <form action="/categories/{{ category.id }}/save" method="post" data-submit data-dirty-watch class="inline-form" aria-label="Edit {{ category.name }} category">
+      <label>Name<input name="name" value="{{ category.name }}" required maxlength="100"></label><label>Colour<input name="colour" type="color" value="{{ category.colour or '#6366f1' }}"></label><label>Parent<select aria-label="Parent" name="parent_id"><option value="">No parent</option>{% for parent in categories if parent.id != category.id %}<option value="{{ parent.id }}" {{ 'selected' if category.parent_id == parent.id }}>{{ parent.name }}</option>{% endfor %}</select></label><button type="submit">Save</button>
+    </form><form action="/categories/{{ category.id }}/delete" method="post" data-submit data-confirm="Delete this category? Its items will be unassigned and its child categories moved to the top level."><button type="submit" class="danger subtle">Delete category</button></form>
+  </div>{% else %}<p>No categories yet.</p>{% endfor %}
+  <h2>Add category</h2><form action="/categories" method="post" data-submit data-dirty-watch class="inline-form"><label>Name<input name="name" required maxlength="100"></label><label>Colour<input name="colour" type="color" value="#6366f1"></label><label>Parent<select aria-label="Parent" name="parent_id"><option value="">No parent</option>{% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}</select></label><button class="primary" type="submit">Add category</button></form>
+</details>
+<details id="label-settings"><summary>Labels</summary><p>Assign labels from a prompt or workflow's edit form.</p>
+  {% for label in labels %}<div class="setting-card">
+    <form action="/settings/labels/{{ label.id }}/save" method="post" data-submit data-dirty-watch class="inline-form" aria-label="Edit {{ label.name }} label"><label>Name<input name="name" value="{{ label.name }}" required maxlength="60"></label><label>Type<select aria-label="Type" name="label_type">{% for kind in label_types %}<option value="{{ kind }}" {{ 'selected' if label.label_type == kind }}>{{ kind }}</option>{% endfor %}</select></label><label>Colour<input name="colour" type="color" value="{{ label.colour or '#6366f1' }}"></label><button type="submit">Save</button></form>
+    <form action="/settings/labels/{{ label.id }}/delete" method="post" data-submit data-confirm="Delete this label and remove its assignments? Prompts and workflows are not deleted."><button type="submit" class="danger subtle">Delete label</button></form>
+  </div>{% endfor %}
+  <h2>Add label</h2><form action="/settings/labels" method="post" data-submit data-dirty-watch class="inline-form"><label>Name<input name="name" required maxlength="60"></label><label>Type<select aria-label="Type" name="label_type">{% for kind in label_types %}<option value="{{ kind }}" {{ 'selected' if kind == 'custom' }}>{{ kind }}</option>{% endfor %}</select></label><label>Colour<input name="colour" type="color" value="#6366f1"></label><button class="primary" type="submit">Add label</button></form>
+</details>
+<details><summary>Storage and access</summary><p>Data directory on the server:</p><pre>{{ data_directory }}</pre><p>Remote backup settings are managed in <a href="/sync" data-nav>Backups</a>. Network binding, authentication and allowed hosts are configured through environment variables or the server's <code>.env</code> file.</p><p>The theme and sidebar state are stored in this browser. Library data stays on the server.</p></details>
+</div>
+{% endblock %}

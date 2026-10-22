@@ -1,0 +1,14 @@
+{% from 'components/metadata.html' import fields %}
+<section class="detail-content">
+<h1>{{ 'Edit prompt' if prompt.id else 'New prompt' }}</h1>
+<form action="{{ '/prompts/' ~ prompt.id ~ '/save' if prompt.id else '/prompts' }}{{ query_suffix }}" method="post" data-submit data-dirty-watch data-editor>
+  <input type="hidden" name="expected_updated_at" value="{{ prompt.updated_at }}">
+  <label>Title<input name="title" value="{{ prompt.title }}" required maxlength="200" autofocus></label>
+  {{ fields(prompt, statuses, projects, categories, labels) }}
+  <label>Prompt body<textarea name="body" rows="17" maxlength="2000000" spellcheck="false" placeholder="Write your prompt here. Markdown and {{ '{{VARIABLE}}' }} placeholders are supported.">{{ prompt.body }}</textarea></label>
+  <button type="button" data-preview aria-expanded="false">Show Markdown preview</button><div class="preview-panel markdown" hidden></div>
+  <label>Notes<textarea name="notes" rows="5" maxlength="2000000">{{ prompt.notes }}</textarea></label>
+  {% if prompt.id %}<label>Version message<input name="version_message" maxlength="200" placeholder="What changed?"></label>{% endif %}
+  <div class="actions sticky-actions"><button class="primary" type="submit">{{ 'Save prompt' if prompt.id else 'Create prompt' }}</button><a class="button" href="{{ '/prompts/' ~ prompt.id if prompt.id else '/' }}{{ query_suffix }}" data-nav>Cancel</a></div>
+</form>
+</section>

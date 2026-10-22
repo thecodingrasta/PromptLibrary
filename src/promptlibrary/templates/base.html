@@ -1,0 +1,29 @@
+{% if not fragment %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="/static/app.css?v={{ version }}">
+  <script src="/static/app.js?v={{ version }}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<noscript><p class="notice">JavaScript is needed for modal confirmations, live navigation and clipboard controls. Basic pages and forms still work.</p></noscript>
+{% endif %}
+<div id="app" data-title="{{ page_title }}">
+  {% include 'partials/sidebar.html' %}
+  <main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
+</div>
+{% if not fragment %}
+<div id="toast" class="toast" hidden><span id="toast-message" role="status" aria-live="polite"></span><button type="button" data-dismiss-toast aria-label="Dismiss message">×</button></div>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+  <form method="dialog">
+    <h2 id="confirm-title">Confirm action</h2>
+    <p id="confirm-message"></p>
+    <div class="actions"><button value="cancel" autofocus>Cancel</button><button value="confirm" class="danger" id="confirm-accept">Confirm</button></div>
+  </form>
+</dialog>
+</body>
+</html>{% endif %}

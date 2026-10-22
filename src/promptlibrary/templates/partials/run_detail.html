@@ -1,0 +1,22 @@
+<article class="detail-content" data-run-id="{{ run.id }}">
+  <a href="/workflows/{{ run.workflow_id }}{{ query_suffix }}" data-nav>Back to workflow</a>
+  <p class="eyebrow">Guided run · {{ run.status }}</p><h1>{{ run.snapshot.name }}</h1>
+  <p>This run uses the workflow and linked prompt bodies as they were when the run started.</p>
+  {% if run.status == 'running' %}
+    {% set stage = run.snapshot.stages[run.current_stage - 1] %}
+    <h2>Stage {{ run.current_stage }} of {{ run.snapshot.stages | length }}: {{ stage.title }}</h2>
+    <p class="muted">Suggested mode: {{ stage.mode | replace('_',' ') }}. Expected output: {{ stage.output_type }}.</p>
+    <label>Rendered input<textarea id="run-input" rows="14" readonly>{{ run.rendered_input }}</textarea></label>
+    <button type="button" data-copy-target="run-input">Copy input for your runner</button>
+    <form action="/workflows/runs/{{ run.id }}/complete{{ query_suffix }}" method="post" data-submit data-dirty-watch>
+      <input type="hidden" name="expected_stage" value="{{ run.current_stage }}">
+      <label>Stage output<textarea name="output" rows="10" required maxlength="2000000" placeholder="Paste the result from your chosen runner."></textarea></label>
+      <button type="submit" class="primary">{{ 'Save output and complete run' if run.current_stage == run.snapshot.stages | length else 'Save output and continue' }}</button>
+    </form>
+    <form action="/workflows/runs/{{ run.id }}/cancel{{ query_suffix }}" method="post" data-submit data-confirm="Cancel this run? Outputs already saved will remain in run history."><button type="submit" class="danger">Cancel run</button></form>
+  {% elif run.status == 'completed' %}<p class="notice success">All stage outputs have been saved.</p>{% else %}<p class="notice">This run was cancelled. Its saved outputs are still available below.</p>{% endif %}
+  <h2>Saved stages</h2>
+  {% for step in run.steps %}<details><summary>Stage {{ step.stage_number }}: {{ run.snapshot.stages[step.stage_number - 1].title }}</summary>
+    <h3>Input</h3><pre class="plain-text">{{ step.rendered_input }}</pre><h3>Output</h3><pre class="plain-text" id="run-output-{{ step.stage_number }}">{{ step.output }}</pre><button type="button" data-copy-target="run-output-{{ step.stage_number }}">Copy output</button>
+  </details>{% else %}<p class="muted">No outputs saved yet.</p>{% endfor %}
+</article>

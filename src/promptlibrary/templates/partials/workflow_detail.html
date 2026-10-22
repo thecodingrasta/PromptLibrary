@@ -1,0 +1,56 @@
+{% from 'components/icons.html' import icon %}
+{% from 'components/metadata.html' import badges %}
+<article class="detail-content" data-workflow-id="{{ workflow.id }}">
+  <header><p class="eyebrow">Workflow</p><h1>{{ workflow.name }}</h1><p class="plain-text">{{ workflow.description }}</p>{{ badges(workflow, status_map, project_map, category_map) }}
+    <div class="actions item-actions">
+      <a class="button primary" href="/workflows/{{ workflow.id }}/edit{{ query_suffix }}" data-nav>{{ icon('edit') }}Edit details</a>
+      <form action="/workflows/{{ workflow.id }}/favourite{{ query_suffix }}" method="post" data-submit><button type="submit" aria-pressed="{{ 'true' if workflow.is_favourite else 'false' }}">{{ icon('star', workflow.is_favourite) }}{{ 'Favourited' if workflow.is_favourite else 'Favourite' }}</button></form>
+      <form action="/workflows/{{ workflow.id }}/delete{{ query_suffix }}" method="post" data-submit data-confirm="Delete this workflow, its stages and all its saved runs? Source prompts and existing backups are not deleted." data-confirm-label="Delete workflow"><button type="submit" class="danger">{{ icon('trash') }}Delete</button></form>
+    </div>
+  </header>
+  <section aria-labelledby="stages-title"><h2 id="stages-title">Stages</h2>
+  {% for stage in workflow.stages %}
+  <article class="stage-card" data-stage-id="{{ stage.id }}">
+    <div class="heading-row"><h3>{{ stage.stage_number }}. {{ stage.title }}</h3><div class="actions">
+      <form action="/workflows/{{ workflow.id }}/stages/{{ stage.id }}/move{{ query_suffix }}" method="post" data-submit><input type="hidden" name="position" value="{{ stage.stage_number - 1 }}"><button class="icon-button" type="submit" aria-label="Move {{ stage.title }} up" title="Move up" {{ 'disabled' if loop.first }}>{{ icon('up') }}</button></form>
+      <form action="/workflows/{{ workflow.id }}/stages/{{ stage.id }}/move{{ query_suffix }}" method="post" data-submit><input type="hidden" name="position" value="{{ stage.stage_number + 1 }}"><button class="icon-button" type="submit" aria-label="Move {{ stage.title }} down" title="Move down" {{ 'disabled' if loop.last }}>{{ icon('down') }}</button></form>
+    </div></div>
+    <p class="muted">{{ stage.mode | replace('_', ' ') | capitalize }} · {{ stage.output_type }}{% if stage.prompt_id %} · Linked to <a href="/prompts/{{ stage.prompt_id }}{{ query_suffix }}" data-nav>{{ stage.source_title }}</a>{% else %} · Independent stage{% endif %}</p>
+    <details><summary>View stage text</summary><pre class="plain-text" id="stage-source-{{ stage.id }}">{% if stage.instructions %}{{ stage.instructions }}
+
+{% endif %}{{ stage.body }}</pre><button type="button" data-copy-target="stage-source-{{ stage.id }}">Copy stage text</button></details>
+    <details><summary>Edit stage</summary>
+      <form action="/workflows/{{ workflow.id }}/stages/{{ stage.id }}/save{{ query_suffix }}" method="post" data-submit data-dirty-watch data-editor>
+        <label>Stage title<input name="title" value="{{ stage.title }}" required maxlength="200"></label>
+        {% if stage.prompt_id %}<label class="checkbox"><input type="checkbox" name="detach_prompt" value="true" data-detach-toggle>Detach from the source prompt and edit this copy.</label>{% endif %}
+        <label>Body<textarea name="body" rows="8" maxlength="2000000" {{ 'disabled' if stage.prompt_id }}>{{ stage.body }}</textarea></label>
+        <label>Runner instructions<textarea name="instructions" rows="3" maxlength="200000">{{ stage.instructions }}</textarea></label>
+        <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}" {{ 'selected' if mode == stage.mode }}>{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json'] %}<option value="{{ kind }}" {{ 'selected' if kind == stage.output_type }}>{{ kind }}</option>{% endfor %}</select></label></div>
+        <button type="submit">Save stage</button>
+      </form>
+    </details>
+    <form action="/workflows/{{ workflow.id }}/stages/{{ stage.id }}/delete{{ query_suffix }}" method="post" data-submit data-confirm="Delete this stage? Deletion is refused if another stage depends on its output."><button type="submit" class="danger subtle">Delete stage</button></form>
+  </article>
+  {% else %}<p>No stages yet. Add a new stage or an existing prompt below.</p>{% endfor %}
+  </section>
+  <details id="add-stage" {% if not workflow.stages %}open{% endif %}><summary>Add a stage or existing prompt</summary>
+    <form action="/workflows/{{ workflow.id }}/stages{{ query_suffix }}" method="post" data-submit data-dirty-watch data-stage-source>
+      <label>Source<select aria-label="Source" name="prompt_id" data-prompt-source><option value="">Write a new stage</option>{% for prompt in available_prompts %}<option value="{{ prompt.id }}">{{ prompt.title }}</option>{% endfor %}</select></label>
+      <label class="checkbox"><input name="link_prompt" type="checkbox" value="true">Keep linked to the source prompt instead of copying it.</label>
+      <label>Stage title<input name="title" required maxlength="200"></label>
+      <label>Body<textarea name="body" rows="8" maxlength="2000000" placeholder="{{ 'Research {{TOPIC}} or build on {{stage_1_output}}.' }}"></textarea></label>
+      <label>Runner instructions<textarea name="instructions" rows="3" maxlength="200000"></textarea></label>
+      <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}">{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json'] %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}</select></label></div>
+      <p class="muted">Mode and output type guide the runner. They do not change a model or enforce its output format.</p>
+      <button class="primary" type="submit">Add stage</button>
+    </form>
+  </details>
+  <section id="workflow-run"><h2>Run this workflow</h2><p>Copy each rendered stage to your chosen AI tool, paste its output back here, and continue. An agent can do the same through MCP.</p>
+    {% if run_error %}<p class="notice error">{{ run_error }}</p>{% elif workflow.stages %}
+    <form action="/workflows/{{ workflow.id }}/runs{{ query_suffix }}" method="post" data-submit data-dirty-watch>
+      {% for name in inputs %}<label>{{ name }}<textarea name="input:{{ name }}" rows="3" required maxlength="2000000"></textarea></label>{% endfor %}
+      <button class="primary" type="submit">Start guided run</button>
+    </form>{% else %}<p class="muted">Add a stage before starting a run.</p>{% endif %}
+  </section>
+  <details><summary>Run history ({{ runs | length }})</summary>{% if runs %}<ol class="history-list">{% for run in runs %}<li><a href="/workflows/runs/{{ run.id }}{{ query_suffix }}" data-nav>{{ run.created_at }} · {{ run.status }}</a><span>Stage {{ run.current_stage }}</span></li>{% endfor %}</ol>{% else %}<p>No runs yet.</p>{% endif %}</details>
+</article>

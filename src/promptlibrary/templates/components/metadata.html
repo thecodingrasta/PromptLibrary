@@ -1,0 +1,22 @@
+{% macro fields(item, statuses, projects, categories, labels) %}
+<div class="form-grid">
+  <label>Status<select aria-label="Status" name="status">{% for status in statuses %}<option value="{{ status.key }}" {{ 'selected' if item.status == status.key }}>{{ status.name }}</option>{% endfor %}</select></label>
+  <label>Project<select aria-label="Project" name="project_id"><option value="">No project</option>{% for project in projects %}<option value="{{ project.id }}" {{ 'selected' if item.project_id == project.id }}>{{ project.name }}{{ ' (archived)' if project.is_archived }}</option>{% endfor %}</select></label>
+  <label>Category<select aria-label="Category" name="category_id"><option value="">No category</option>{% for category in categories %}<option value="{{ category.id }}" {{ 'selected' if item.category_id == category.id }}>{{ category.name }}</option>{% endfor %}</select></label>
+  <label>Tags<input name="tags" value="{{ item.tags | map(attribute='name') | join(', ') }}" placeholder="code, review" maxlength="4000"><small>Separate tags with commas.</small></label>
+</div>
+<details class="label-picker"><summary>Labels{% if item.labels %} ({{ item.labels | length }}){% endif %}</summary>
+  {% set assigned = item.labels | map(attribute='id') | list %}
+  <div class="checkbox-grid">{% for label in labels %}<label class="checkbox"><input type="checkbox" name="label_ids" value="{{ label.id }}" {{ 'checked' if label.id in assigned }}>{{ label.name }} <small>{{ label.label_type }}</small></label>{% endfor %}</div>
+  <p class="muted">Create or change labels in Settings.</p>
+</details>
+{% endmacro %}
+{% macro badges(item, status_map, project_map, category_map) %}
+<div class="badges">
+  <span class="status-badge" style="--badge-colour:{{ status_map[item.status].colour }}">{{ status_map[item.status].name }}</span>
+  {% if item.project_id and item.project_id in project_map %}<a href="/?project_id={{ item.project_id }}" class="badge" data-nav>{{ project_map[item.project_id].name }}</a>{% endif %}
+  {% if item.category_id and item.category_id in category_map %}<a href="/?category_id={{ item.category_id }}" class="badge" data-nav>{{ category_map[item.category_id].name }}</a>{% endif %}
+  {% for tag in item.tags %}<span class="badge">{{ tag.name }}</span>{% endfor %}
+  {% for label in item.labels %}<span class="badge" title="{{ label.label_type }}">{{ label.name }}</span>{% endfor %}
+</div>
+{% endmacro %}

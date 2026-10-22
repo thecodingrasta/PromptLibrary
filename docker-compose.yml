@@ -1,0 +1,22 @@
+services:
+  promptlibrary:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      PROMPTLIB_AUTH_USERNAME: ${PROMPTLIB_AUTH_USERNAME:-promptlibrary}
+      PROMPTLIB_AUTH_PASSWORD: ${PROMPTLIB_AUTH_PASSWORD:?Set a random password of at least 16 characters in .env}
+      PROMPTLIB_ALLOWED_HOSTS: ${PROMPTLIB_ALLOWED_HOSTS:-["127.0.0.1","localhost"]}
+      PROMPTLIB_PUBLIC_ORIGIN: ${PROMPTLIB_PUBLIC_ORIGIN:-}
+    volumes:
+      - promptlibrary-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  promptlibrary-data:

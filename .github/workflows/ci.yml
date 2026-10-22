@@ -1,0 +1,97 @@
+name: Release checks
+on:
+  push:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Native ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.12', '3.13', '3.14']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install ".[dev]"
+      - run: python -m pytest -q --ignore=tests/e2e --ignore=tests/integration
+      - run: python -m pytest -q tests/integration
+      - run: promptlibrary --version
+      - run: promptlibrary-mcp --print-config
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install ".[dev,desktop]"
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+      - run: python -m mypy src/promptlibrary
+      - run: python scripts/check_release_assets.py
+      - run: python -m pip_audit --strict --progress-spinner off
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install ".[e2e]"
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q tests/e2e --browser chromium --tracing retain-on-failure --screenshot only-on-failure
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure-${{ matrix.os }}
+          path: test-results/
+          retention-days: 7
+  browser-engines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install ".[e2e]"
+      - run: python -m playwright install --with-deps firefox webkit
+      - run: python -m pytest -q tests/e2e --browser firefox --browser webkit
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install build
+      - run: python -m build
+      - run: python scripts/package_smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag promptlibrary:test .
+      - run: python scripts/docker_smoke.py

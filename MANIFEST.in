@@ -1,0 +1,11 @@
+include LICENSE COPYING NOTICE README.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md SUPPORT.md AGENTS.md CHANGELOG.md
+include pyproject.toml Dockerfile docker-compose.yml .env.example .editorconfig .gitattributes .gitignore .dockerignore
+recursive-include src/promptlibrary/templates *.html
+recursive-include src/promptlibrary/static *.css *.js *.txt
+recursive-include src/promptlibrary/content *.md
+recursive-include docs *.md
+recursive-include scripts *.py *.sh *.ps1
+recursive-include tests *.py *.sql
+recursive-include .github *.yml *.md
+prune tests/e2e/screenshots
+global-exclude *.py[cod] __pycache__ .DS_Store

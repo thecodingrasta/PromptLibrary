@@ -1,0 +1,17 @@
+name: Feature request
+description: Describe a problem that PromptLibrary could solve.
+title: "Feature: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour and alternatives
+      description: Include human and agent use where relevant, and how success could be tested.
+    validations:
+      required: true

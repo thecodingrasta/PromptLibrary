@@ -1,0 +1,35 @@
+{% from 'components/icons.html' import icon %}
+{% from 'components/metadata.html' import badges %}
+<article class="detail-content" data-prompt-id="{{ prompt.id }}">
+  <header><p class="eyebrow">Prompt</p><h1>{{ prompt.title }}</h1>{{ badges(prompt, status_map, project_map, category_map) }}
+    <div class="actions item-actions">
+      <a href="/prompts/{{ prompt.id }}/edit{{ query_suffix }}" class="button primary" data-nav>{{ icon('edit') }}Edit</a>
+      <button type="button" data-copy-target="prompt-source">{{ icon('copy') }}Copy prompt</button>
+      <form action="/prompts/{{ prompt.id }}/favourite{{ query_suffix }}" method="post" data-submit><button type="submit" aria-pressed="{{ 'true' if prompt.is_favourite else 'false' }}" class="{{ 'favourite' if prompt.is_favourite }}" aria-label="{{ 'Remove from favourites' if prompt.is_favourite else 'Add to favourites' }}">{{ icon('star', prompt.is_favourite) }}{{ 'Favourited' if prompt.is_favourite else 'Favourite' }}</button></form>
+      <form action="/prompts/{{ prompt.id }}/delete{{ query_suffix }}" method="post" data-submit data-confirm="Delete this prompt and all its version history? Existing backups are not changed." data-confirm-label="Delete prompt"><button type="submit" class="danger">{{ icon('trash') }}Delete</button></form>
+    </div>
+  </header>
+  <div class="markdown prompt-body">{{ rendered_body | safe }}</div>
+  <details><summary>Plain text</summary><textarea id="prompt-source" readonly rows="12" aria-label="Prompt source">{{ prompt.body }}</textarea></details>
+  {% if prompt.notes %}<details><summary>Notes</summary><pre class="plain-text">{{ prompt.notes }}</pre></details>{% endif %}
+  <details><summary>Add to a workflow</summary>
+    {% if workflows_for_prompt %}<form action="/prompts/{{ prompt.id }}/add-to-workflow{{ query_suffix }}" method="post" data-submit>
+      <label>Workflow<select aria-label="Workflow" name="workflow_id" required>{% for workflow in workflows_for_prompt %}<option value="{{ workflow.id }}">{{ workflow.name }}</option>{% endfor %}</select></label>
+      <label class="checkbox"><input type="checkbox" name="link_prompt" value="true">Keep linked to this prompt. Leave unticked to copy its current body.</label>
+      <button type="submit">Add as the last stage</button>
+    </form>{% else %}<p>Create a workflow first, then add this prompt as a stage.</p><a href="/workflows/new" data-nav>Create workflow</a>{% endif %}
+  </details>
+  <details id="version-history" {{ 'open' if history_open | default(false) }}>
+    <summary>Version history ({{ versions | length }})</summary>
+    <p class="muted">Versions record body, notes and status. Titles, labels and project assignments are not versioned.</p>
+    {% if versions %}
+      <ol class="history-list">{% for version in versions %}<li>
+        <div><strong>Version {{ version.version_number }}</strong><span class="muted">{{ version.created_at }}</span><p>{{ version.message or 'Saved version' }}</p></div>
+        <div class="actions"><a href="/versions/prompts/{{ prompt.id }}/versions/{{ version.version_number }}/diff{{ query_suffix }}" data-nav>Compare</a>
+          <form action="/versions/prompts/{{ prompt.id }}/restore/{{ version.version_number }}{{ query_suffix }}" method="post" data-submit data-confirm="Restore this version's body, notes and status? A new version will record the restore."><button type="submit">Restore</button></form>
+        </div>
+      </li>{% endfor %}</ol>
+      <form action="/prompts/{{ prompt.id }}/versions/clear{{ query_suffix }}" method="post" data-submit data-confirm="Permanently clear every saved version of this prompt? The current prompt stays unchanged. Copies in existing backups remain." data-confirm-label="Clear version history"><button type="submit" class="danger">Clear version history</button></form>
+    {% else %}<p>No saved versions. The next edit will create version 1.</p>{% endif %}
+  </details>
+</article>

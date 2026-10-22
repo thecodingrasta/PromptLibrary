@@ -1,0 +1,11 @@
+{% from 'components/metadata.html' import fields %}
+<section class="detail-content">
+<h1>{{ 'Edit workflow' if workflow.id else 'New workflow' }}</h1>
+<form action="{{ '/workflows/' ~ workflow.id ~ '/save' if workflow.id else '/workflows' }}{{ query_suffix }}" method="post" data-submit data-dirty-watch>
+  <input type="hidden" name="expected_updated_at" value="{{ workflow.updated_at }}">
+  <label>Name<input name="name" value="{{ workflow.name }}" required maxlength="200" autofocus></label>
+  <label>Description<textarea name="description" rows="4" maxlength="2000000">{{ workflow.description }}</textarea></label>
+  {{ fields(workflow, statuses, projects, categories, labels) }}
+  <div class="actions"><button class="primary" type="submit">{{ 'Save workflow' if workflow.id else 'Create workflow' }}</button><a href="{{ '/workflows/' ~ workflow.id if workflow.id else '/' }}{{ query_suffix }}" data-nav>Cancel</a></div>
+</form>
+</section>

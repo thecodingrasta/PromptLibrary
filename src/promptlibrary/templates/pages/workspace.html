@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon %}
+{% block content %}
+<div class="workspace">
+  <section id="library-panel" class="library-panel" aria-label="Prompt and workflow library">
+    <header class="library-header">
+      <div class="heading-row"><h1>Library</h1><span class="muted" aria-live="polite">{{ total }} item{{ '' if total == 1 else 's' }}</span></div>
+      <div class="actions"><a href="/prompts/new{{ query_suffix }}" class="button primary" data-nav>New prompt</a><a href="/workflows/new{{ query_suffix }}" class="button" data-nav>New workflow</a></div>
+      <form method="get" action="{{ filter_path }}" data-submit data-search id="library-filters">
+        <label class="sr-only" for="library-search">Search prompts and workflows</label>
+        <input id="library-search" type="search" name="q" value="{{ filters.q }}" placeholder="Search your library" autocomplete="off" maxlength="2000">
+        <details class="filters" {% if filters.project_id or filters.category_id or filters.status or filters.tag or filters.item_type or filters.favourites_only %}open{% endif %}>
+          <summary>Filters</summary>
+          <div class="filter-grid">
+            <label>Type<select aria-label="Type" name="item_type"><option value="">All items</option><option value="prompt" {{ 'selected' if filters.item_type == 'prompt' }}>Prompts</option><option value="workflow" {{ 'selected' if filters.item_type == 'workflow' }}>Workflows</option></select></label>
+            <label>Status<select aria-label="Status" name="status"><option value="">All statuses</option>{% for item in statuses %}<option value="{{ item.key }}" {{ 'selected' if filters.status == item.key }}>{{ item.name }}</option>{% endfor %}</select></label>
+            <label>Project<select aria-label="Project" name="project_id"><option value="">All projects</option>{% for item in projects %}<option value="{{ item.id }}" {{ 'selected' if filters.project_id == item.id }}>{{ item.name }}{{ ' (archived)' if item.is_archived }}</option>{% endfor %}</select></label>
+            <label>Category<select aria-label="Category" name="category_id"><option value="">All categories</option>{% for item in categories %}<option value="{{ item.id }}" {{ 'selected' if filters.category_id == item.id }}>{{ item.name }}</option>{% endfor %}</select></label>
+            <label>Tag<select aria-label="Tag" name="tag"><option value="">All tags</option>{% for item in tags %}<option value="{{ item.name }}" {{ 'selected' if filters.tag == item.name }}>{{ item.name }}</option>{% endfor %}</select></label>
+            <label class="checkbox"><input type="checkbox" name="favourites_only" value="true" {{ 'checked' if filters.favourites_only }}>Favourites only</label>
+          </div>
+          <div class="actions"><button type="submit">Apply filters</button><a href="/" data-nav>Reset</a></div>
+        </details>
+      </form>
+    </header>
+    <div id="prompt-list" class="list-scroll">
+      {% for item in items %}
+      <article class="library-item {{ 'selected' if item.id == selected_id }}" data-item-id="{{ item.id }}" data-item-type="{{ item.item_type }}">
+        <a href="/{{ 'prompts' if item.item_type == 'prompt' else 'workflows' }}/{{ item.id }}{{ query_suffix }}" data-nav {{ 'aria-current=page' if item.id == selected_id }}>
+          <div class="item-heading"><strong>{{ item.title }}</strong>{% if item.is_favourite %}<span class="favourite" title="Favourite" aria-label="Favourite">{{ icon('star', true) }}</span>{% endif %}</div>
+          <div class="item-meta"><span class="type-badge">{{ 'Prompt' if item.item_type == 'prompt' else 'Workflow' }}</span><span class="status-badge" style="--badge-colour:{{ item.status_colour }}">{{ item.status_name }}</span></div>
+          {% if item.tag_names %}<div class="item-tags">{{ item.tag_names | replace(',', ', ') }}</div>{% endif %}
+        </a>
+      </article>
+      {% else %}<p class="empty-list">{{ 'No prompts found.' if filters.item_type == 'prompt' else ('No workflows yet.' if filters.item_type == 'workflow' else 'No items match these filters.') }}</p>{% endfor %}
+    </div>
+    {% if total > page_size %}<nav class="pagination" aria-label="Library pages">{% if filters.page > 1 %}<a href="{{ previous_page }}" data-nav>Previous</a>{% endif %}<span>Page {{ filters.page }}</span>{% if filters.page * page_size < total %}<a href="{{ next_page }}" data-nav>Next</a>{% endif %}</nav>{% endif %}
+  </section>
+  <section id="detail-panel" class="detail-panel" aria-label="Selected item">
+    {% include 'partials/' ~ view ~ '.html' %}
+  </section>
+</div>
+{% endblock %}

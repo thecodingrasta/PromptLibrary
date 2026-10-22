@@ -1,0 +1,8 @@
+<section class="detail-content">
+  <a href="/prompts/{{ prompt.id }}{{ query_suffix }}" data-nav>Back to {{ prompt.title }}</a>
+  <h1>Version {{ saved_version.version_number }}</h1>
+  <p>Body compared with the preceding version. For version 1, the comparison is against an empty body.</p>
+  <pre class="diff">{% for line in diff %}<span class="{{ 'diff-added' if line.startswith('+') else ('diff-removed' if line.startswith('-') else '') }}">{{ line }}</span>
+{% else %}No body changes.{% endfor %}</pre>
+  <details><summary>Saved notes and status</summary><p>Status: {{ saved_version.status }}</p><pre class="plain-text">{{ saved_version.notes }}</pre></details>
+</section>
