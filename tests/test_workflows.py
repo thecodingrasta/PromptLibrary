@@ -80,6 +80,22 @@ async def test_workflow_render_stage_variables():
 
 
 @pytest.mark.asyncio
+async def test_workflow_archive_and_media_output_types():
+    async with get_db() as db:
+        svc = WorkflowService(db)
+        wf_id = await svc.create_workflow(name="Output Types")
+        archive_id = await svc.add_stage(wf_id, title="Archive", output_type="archive")
+        media_id = await svc.add_stage(wf_id, title="Media", output_type="media")
+        await db.commit()
+
+        workflow = await svc.get_workflow(wf_id)
+        assert [stage["output_type"] for stage in workflow["stages"]] == ["archive", "media"]
+        with pytest.raises(ValueError, match="Unknown stage mode or output type"):
+            await svc.add_stage(wf_id, title="Invalid", output_type="binary")
+        assert archive_id != media_id
+
+
+@pytest.mark.asyncio
 async def test_workflow_extract_variables():
     svc = WorkflowService(None)  # DB not needed for this
     variables = svc.extract_variables("Hello {{NAME}}, research {{TOPIC}} using {{SOURCES}}")

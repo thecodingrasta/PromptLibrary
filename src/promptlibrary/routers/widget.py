@@ -20,6 +20,7 @@ async def widget_page(request: Request, q: str = "") -> HTMLResponse:
             request,
             "pages/widget.html",
             {"items": items, "total": total, "q": q},
-            title="Prompt picker | PromptLibrary",
+            title="Quick Prompts | PromptLibrary",
+            section="widget",
             url="/widget",
         )

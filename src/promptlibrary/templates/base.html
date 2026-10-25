@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#087BFA">
+  <meta name="description" content="A focused, self-hosted library for prompts and guided workflows.">
+  <link rel="icon" href="/static/favicon.ico?v={{ version }}" sizes="any">
+  <link rel="icon" href="/static/favicon-32x32.png?v={{ version }}" type="image/png" sizes="32x32">
+  <link rel="icon" href="/static/favicon-16x16.png?v={{ version }}" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{ version }}" sizes="180x180">
+  <link rel="manifest" href="/static/manifest.json?v={{ version }}">
   <title>{{ page_title }}</title>
   <link rel="stylesheet" href="/static/app.css?v={{ version }}">
   <script src="/static/app.js?v={{ version }}" defer></script>
@@ -25,5 +32,6 @@
     <div class="actions"><button value="cancel" autofocus>Cancel</button><button value="confirm" class="danger" id="confirm-accept">Confirm</button></div>
   </form>
 </dialog>
+<dialog id="app-modal" aria-labelledby="app-modal-title"><div id="app-modal-content"></div></dialog>
 </body>
 </html>{% endif %}

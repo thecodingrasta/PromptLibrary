@@ -1,9 +1,66 @@
+  function initializeHelpPage() {
+    const content = document.querySelector("[data-help-content]");
+    const navigation = document.querySelector("[data-help-nav]");
+    if (!content || !navigation || navigation.dataset.ready) return;
+    navigation.dataset.ready = "true";
+    const headings = Array.from(content.querySelectorAll("h2"));
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const [index, heading] of headings.entries()) {
+      const slug = heading.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `section-${index + 1}`;
+      heading.id = slug;
+      heading.tabIndex = -1;
+      const link = document.createElement("a");
+      link.href = `#${slug}`;
+      link.textContent = heading.textContent;
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        heading.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+        history.replaceState({}, "", `#${slug}`);
+        heading.focus({ preventScroll: true });
+      });
+      navigation.append(link);
+    }
+    if (!headings.length) navigation.hidden = true;
+  }
+
+  function initializeSettingsTabs() {
+    for (const group of document.querySelectorAll("[data-settings-tabs]")) {
+      const tabs = Array.from(group.querySelectorAll("[data-settings-tab]"));
+      if (!tabs.length || group.dataset.ready) continue;
+      group.dataset.ready = "true";
+      const activate = (tab, focus = false) => {
+        for (const candidate of tabs) {
+          const selected = candidate === tab;
+          candidate.setAttribute("aria-selected", String(selected));
+          candidate.classList.toggle("is-active", selected);
+          candidate.tabIndex = selected ? 0 : -1;
+          const panel = group.querySelector(`#${CSS.escape(candidate.dataset.settingsTab || "")}`);
+          if (panel) panel.hidden = !selected;
+        }
+        if (focus) tab.focus();
+      };
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activate(tab));
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const targetIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+          activate(tabs[targetIndex], true);
+        });
+      });
+      const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+      activate(selected);
+    }
+  }
+
+
 "use strict";
 
 (() => {
   let navigationController = null;
   let navigationSequence = 0;
   let mutationPending = false;
+  let queuedSubmission = null;
   let currentPageUrl = window.location.href;
   let searchTimer = null;
   let previewTimer = null;
@@ -22,6 +79,146 @@
     try { localStorage.setItem(name, value); }
     catch { /* Private browser modes may disable storage; the controls still work. */ }
   }
+
+  function initializeTagEditors() {
+    for (const editor of document.querySelectorAll("[data-tag-editor]")) {
+      if (editor.dataset.ready) continue;
+      editor.dataset.ready = "true";
+      const input = editor.querySelector("input[name='tags']");
+      if (!(input instanceof HTMLInputElement)) continue;
+      const initial = input.value.split(",").map((tag) => tag.trim()).filter(Boolean);
+      input.value = "";
+      const tags = [];
+      const render = () => {
+        editor.querySelectorAll(".tag-chip").forEach((chip) => chip.remove());
+        for (const tag of tags) {
+          const chip = document.createElement("span");
+          chip.className = "tag-chip";
+          chip.textContent = tag;
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "×";
+          remove.setAttribute("aria-label", `Remove tag ${tag}`);
+          remove.addEventListener("click", () => {
+            tags.splice(tags.indexOf(tag), 1);
+            render();
+          });
+          chip.append(remove);
+          editor.insertBefore(chip, input);
+        }
+      };
+      const add = (value) => {
+        const tag = value.trim();
+        if (tag && !tags.includes(tag) && tags.length < 100) tags.push(tag);
+        input.value = "";
+        render();
+      };
+      initial.forEach(add);
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "," || event.key === "Enter") {
+          event.preventDefault();
+          add(input.value);
+        } else if (event.key === "Backspace" && !input.value && tags.length) {
+          tags.pop();
+          render();
+        }
+      });
+      input.form?.addEventListener("submit", () => { input.value = tags.join(", "); });
+      render();
+    }
+  }
+
+  function openModal(config) {
+    const modal = document.getElementById("app-modal");
+    const content = document.getElementById("app-modal-content");
+    if (!(modal instanceof HTMLDialogElement) || !content || modal.open) return Promise.resolve(null);
+    content.replaceChildren();
+    const title = document.createElement("h2");
+    title.id = "app-modal-title";
+    title.textContent = config.title || "Dialog";
+    content.append(title);
+    if (config.body) {
+      const body = document.createElement("p");
+      body.textContent = config.body;
+      content.append(body);
+    }
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    for (const action of config.actions || [{ label: "Close", value: "close" }]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = action.label;
+      button.className = action.primary ? "primary" : "";
+      button.addEventListener("click", () => { modal.close(action.value); });
+      actions.append(button);
+    }
+    content.append(actions);
+    modal.showModal();
+    return new Promise((resolve) => modal.addEventListener("close", () => resolve(modal.returnValue), { once: true }));
+  }
+
+  async function createInlineMetadata(kind, trigger) {
+    const modal = document.getElementById("app-modal");
+    const content = document.getElementById("app-modal-content");
+    if (!(modal instanceof HTMLDialogElement) || !content || modal.open) return;
+    const title = kind[0].toUpperCase() + kind.slice(1);
+    content.innerHTML = `<h2 id="app-modal-title">Create ${title}</h2><form data-inline-form><label>Name<input name="name" required maxlength="200" autofocus></label><div class="actions"><button class="primary" type="submit">Create ${title}</button><button type="button" data-modal-cancel>Cancel</button></div></form>`;
+    modal.showModal();
+    const form = content.querySelector("form");
+    const close = () => modal.close("cancel");
+    content.querySelector("[data-modal-cancel]")?.addEventListener("click", close);
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = new FormData(form).get("name");
+      if (typeof name !== "string" || !name.trim()) return;
+      const endpoint = { category: "/api/categories", project: "/api/projects", status: "/api/statuses" }[kind];
+      if (!endpoint) { showMessage("Unsupported metadata type.", true); return; }
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
+      if (!response.ok) { showMessage(await errorMessage(response), true); return; }
+      const created = await response.json();
+      const select = trigger.closest("label")?.querySelector("select");
+      if (select instanceof HTMLSelectElement) {
+        const option = new Option(created.name, created.id || created.key, true, true);
+        select.add(option);
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      modal.close("created");
+      showMessage(`${title} created.`);
+    });
+  }
+
+  function initializeMarkdownEditors() {
+    for (const editor of document.querySelectorAll("[data-markdown-editor]")) {
+      if (editor.dataset.ready) continue;
+      editor.dataset.ready = "true";
+      const textarea = editor.querySelector("textarea");
+      if (!(textarea instanceof HTMLTextAreaElement)) continue;
+      editor.querySelectorAll("[data-md-action]").forEach((button) => button.addEventListener("click", () => {
+        const action = button.dataset.mdAction;
+        const wrappers = { bold: ["**", "**"], italic: ["*", "*"], code: ["`", "`"], heading: ["## ", ""], list: ["- ", ""], quote: ["> ", ""] };
+        const wrapper = wrappers[action];
+        if (!wrapper) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.slice(start, end) || "text";
+        const replacement = `${wrapper[0]}${selected}${wrapper[1]}`;
+        textarea.setRangeText(replacement, start, end, "select");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        textarea.focus();
+      }));
+    }
+  }
+
+  function prepareProjectDialogs() {
+    for (const dialog of document.querySelectorAll(".project-dialog")) {
+      if (dialog.dataset.ready) continue;
+      dialog.dataset.ready = "true";
+      dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+      dialog.querySelector("[data-project-close]")?.addEventListener("click", () => dialog.close());
+    }
+  }
+
+  window.promptLibraryModal = openModal;
 
   const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   root.dataset.theme = readPreference("promptlibrary-theme", preferredTheme) === "dark" ? "dark" : "light";
@@ -77,10 +274,20 @@
     const themeToggle = document.getElementById("theme-toggle");
     if (themeToggle) themeToggle.setAttribute("aria-pressed", String(root.dataset.theme === "dark"));
     updateRemoteFields();
+    initializeTagEditors();
+    initializeMarkdownEditors();
+    prepareProjectDialogs();
+    initializeHelpPage();
+    initializeSettingsTabs();
     for (const source of document.querySelectorAll("[data-prompt-source]")) {
       const form = source.closest("form");
-      form.querySelector("textarea[name='body']").disabled = Boolean(source.value);
-      form.querySelector("input[name='link_prompt']").disabled = !source.value;
+      const body = form.querySelector("textarea[name='body']");
+      const linked = form.querySelector("input[name='link_prompt']");
+      const selected = source.selectedOptions[0];
+      body.disabled = Boolean(source.value);
+      linked.disabled = !source.value;
+      if (source.value) linked.checked = true;
+      if (source.value && selected?.dataset.body !== undefined) body.value = selected.dataset.body;
     }
   }
 
@@ -191,18 +398,41 @@
         const currentApp = document.getElementById("app");
         currentApp?.removeAttribute("aria-busy");
         if (currentApp) currentApp.inert = false;
+        if (!mutationPending && queuedSubmission) {
+          const queued = queuedSubmission;
+          queuedSubmission = null;
+          queueMicrotask(() => { void replayQueuedSubmission(queued); });
+        }
       }
     }
   }
 
+  async function replayQueuedSubmission(queued) {
+    const url = new URL(queued.action, window.location.origin);
+    if (queued.method === "GET") {
+      url.search = "";
+      for (const [key, value] of queued.data) if (typeof value === "string" && value !== "") url.searchParams.append(key, value);
+      await navigate(url.href, { guard: false });
+    } else {
+      await navigate(url.href, { method: queued.method, body: queued.data, guard: false });
+    }
+  }
+
   async function submitForm(form, submitter = null) {
-    if (mutationPending || !form.reportValidity()) return;
+    if (mutationPending) {
+      if (!form.reportValidity()) return;
+      const data = new FormData(form);
+      if (submitter?.name) data.append(submitter.name, submitter.value);
+      queuedSubmission = { action: form.action, method: (form.method || "GET").toUpperCase(), data };
+      return;
+    }
+    if (!form.reportValidity()) return;
     if (!await canLeave(form)) {
       if (form.hasAttribute("data-search")) form.reset();
       return;
     }
     if (form.dataset.confirm && !await confirmAction(form.dataset.confirm, form.dataset.confirmLabel || "Confirm")) return;
-    if (mutationPending || !form.isConnected) return;
+    if (mutationPending) return;
     const method = (form.method || "GET").toUpperCase();
     const data = new FormData(form);
     if (submitter?.name) data.append(submitter.name, submitter.value);
@@ -279,6 +509,14 @@
       document.getElementById("toast").hidden = true;
       return;
     }
+    const projectEdit = element.closest("[data-project-edit]");
+    if (projectEdit) {
+      const dialog = document.getElementById(`project-edit-${projectEdit.dataset.projectEdit}`);
+      if (dialog instanceof HTMLDialogElement) dialog.showModal();
+      return;
+    }
+    const inlineCreate = element.closest("[data-inline-create]");
+    if (inlineCreate) { await createInlineMetadata(inlineCreate.dataset.inlineCreate, inlineCreate); return; }
     const copy = element.closest("[data-copy-target]");
     if (copy) { await copyText(copy.dataset.copyTarget); return; }
     const preview = element.closest("[data-preview]");
@@ -315,6 +553,17 @@
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { if (searchForm.isConnected) void submitForm(searchForm); }, 300);
     }
+    const helpSearch = input.closest("[data-help-search]");
+    if (helpSearch) {
+      const query = input.value.trim().toLowerCase();
+      const content = document.querySelector("[data-help-content]");
+      if (content) {
+        for (const child of content.children) {
+          const searchable = child.textContent.toLowerCase();
+          child.hidden = Boolean(query) && !searchable.includes(query);
+        }
+      }
+    }
     const editor = input.closest("form[data-editor]");
     if (editor && input.matches("textarea[name='body']")) {
       clearTimeout(previewTimer);
@@ -337,10 +586,13 @@
       const body = form.querySelector("textarea[name='body']");
       const title = form.querySelector("input[name='title']");
       const linked = form.querySelector("input[name='link_prompt']");
+      const selected = input.selectedOptions[0];
       body.disabled = Boolean(input.value);
       linked.disabled = !input.value;
+      linked.checked = Boolean(input.value);
+      if (input.value) body.value = selected?.dataset.body || "";
       if (input.value && (!title.value || title.dataset.autoTitle === title.value)) {
-        title.value = input.selectedOptions[0].textContent;
+        title.value = selected.textContent;
         title.dataset.autoTitle = title.value;
       }
     }
@@ -363,6 +615,12 @@
       event.returnValue = "";
     }
   });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      void navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+    });
+  }
 
   preparePage();
 })();

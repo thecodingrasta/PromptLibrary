@@ -21,7 +21,7 @@ working directory, so use absolute paths for service and MCP installations.
 ## Reverse proxy
 
 Use a private interface or loopback binding and an HTTPS proxy. Restrict access at
-the firewall and proxy, preserve the request's Host, and add that hostname to
+the firewall and proxy, preserve the request's Host and add that hostname to
 `PROMPTLIB_ALLOWED_HOSTS`. Set `PROMPTLIB_PUBLIC_ORIGIN` to the proxy's exact HTTPS
 origin. Include its port only when non-standard. Do not use a URL path prefix;
 the application is served at the origin root.

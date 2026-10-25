@@ -17,7 +17,7 @@ from promptlibrary.services.validation import (
 PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 STAGE_OUTPUT = re.compile(r"stage_([1-9][0-9]*)_output\Z")
 MODES = {"standard", "deep_research", "high_reasoning", "extra_high_reasoning"}
-OUTPUT_TYPES = {"text", "markdown", "code", "json"}
+OUTPUT_TYPES = {"text", "markdown", "code", "json", "archive", "media"}
 
 
 class WorkflowService:

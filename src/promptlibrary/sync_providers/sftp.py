@@ -60,7 +60,10 @@ class SFTPSyncProvider(SyncProvider):
         def upload() -> None:
             with self._connect() as client:
                 with client.open_sftp() as remote:
-                    remote.get_channel().settimeout(30)
+                    channel = remote.get_channel()
+                    if channel is None:
+                        raise RuntimeError("SFTP did not provide a transport channel.")
+                    channel.settimeout(30)
                     try:
                         remote.putfo(io.BytesIO(content), temporary, confirm=True)
                         remote.chmod(temporary, 0o600)
@@ -80,7 +83,10 @@ class SFTPSyncProvider(SyncProvider):
         def download() -> bytes:
             with self._connect() as client:
                 with client.open_sftp() as remote:
-                    remote.get_channel().settimeout(30)
+                    channel = remote.get_channel()
+                    if channel is None:
+                        raise RuntimeError("SFTP did not provide a transport channel.")
+                    channel.settimeout(30)
                     with remote.open(target, "rb") as stream:
                         content = stream.read(MAX_SNAPSHOT_BYTES + 1)
                     if len(content) > MAX_SNAPSHOT_BYTES:
@@ -93,7 +99,10 @@ class SFTPSyncProvider(SyncProvider):
         def probe() -> bool:
             with self._connect() as client:
                 with client.open_sftp() as remote:
-                    remote.get_channel().settimeout(30)
+                    channel = remote.get_channel()
+                    if channel is None:
+                        raise RuntimeError("SFTP did not provide a transport channel.")
+                    channel.settimeout(30)
                     remote.stat(self.config.sftp_remote_path)
             return True
 

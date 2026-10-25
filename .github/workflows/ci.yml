@@ -38,7 +38,7 @@ jobs:
       - run: python -m ruff format --check .
       - run: python -m mypy src/promptlibrary
       - run: python scripts/check_release_assets.py
-      - run: python -m pip_audit --strict --progress-spinner off
+      - run: python -m pip_audit --strict --skip-editable --progress-spinner off
   browser:
     strategy:
       fail-fast: false
@@ -72,7 +72,8 @@ jobs:
       - run: python -m playwright install --with-deps firefox webkit
       - run: python -m pytest -q tests/e2e --browser firefox --browser webkit
   package:
-    runs-on: ubuntu-latest
+    needs: native
+    runs-on: macos-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

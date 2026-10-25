@@ -1,6 +1,6 @@
 {% from 'components/icons.html' import icon %}
 <aside id="sidebar" aria-label="Main navigation">
-  <a class="brand" href="/" data-nav aria-label="PromptLibrary home"><span class="brand-mark">PL</span><span class="nav-label">PromptLibrary</span></a>
+  <a class="brand" href="/" data-nav aria-label="PromptLibrary home"><img class="brand-mark brand-image" src="/static/app-icon.png" alt="" width="36" height="36"><span class="nav-label">PromptLibrary</span></a>
   <div class="sidebar-controls">
     <button id="theme-toggle" class="icon-button" type="button" data-theme-toggle aria-label="Toggle light and dark theme" title="Toggle theme"><span class="sun-icon">{{ icon('sun') }}</span><span class="moon-icon">{{ icon('moon') }}</span></button>
     <button id="sidebar-toggle" class="icon-button" type="button" data-sidebar-toggle aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">{{ icon('collapse') }}</button>
@@ -10,7 +10,7 @@
     <a href="/?favourites_only=true" data-nav title="Favourites" aria-label="Favourites">{{ icon('star') }}<span class="nav-label">Favourites</span></a>
   </nav>
   <nav class="nav-bottom" aria-label="Tools and support">
-    {% for href, name, glyph, key in [('/workflows','Workflows','workflow','workflows'),('/projects','Projects','project','projects'),('/widget','Prompt picker','widget','widget'),('/sync','Backups','backup','sync'),('/settings','Settings','settings','settings'),('/help','Help','help','help'),('/about','About','about','about')] %}
+    {% for href, name, glyph, key in [('/workflows','Workflows','workflow','workflows'),('/projects','Projects','project','projects'),('/widget','Quick Prompts','widget','widget'),('/sync','Backups','backup','sync'),('/settings','Settings','settings','settings'),('/help','Help','help','help'),('/about','About','about','about')] %}
     <a href="{{ href }}" data-nav title="{{ name }}" aria-label="{{ name }}" class="{{ 'active' if section == key else '' }}">{{ icon(glyph) }}<span class="nav-label">{{ name }}</span></a>
     {% endfor %}
   </nav>

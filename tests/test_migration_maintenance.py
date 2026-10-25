@@ -47,7 +47,7 @@ async def test_schema_two_upgrade_preserves_relations_and_creates_backup(tmp_pat
         db.execute("INSERT INTO workflow_tags VALUES ('workflow','tag')")
         db.commit()
     await init_db(settings)
-    assert inspect_database(settings.db_path)["schema_version"] == 3
+    assert inspect_database(settings.db_path)["schema_version"] == 4
     backups = list((tmp_path / "backups").glob("*.db"))
     assert len(backups) == 1
     assert inspect_database(backups[0])["schema_version"] == 2
@@ -107,7 +107,7 @@ async def test_native_restore_to_empty_directory_and_future_refusal(tmp_path: Pa
         restore_database(settings.db_path, target)
     with pytest.raises(RuntimeError, match="newer"):
         await init_db(settings)
-    assert inspect_database(target)["schema_version"] == 3
+    assert inspect_database(target)["schema_version"] == 4
 
 
 async def test_revision_tokens_change_on_every_edit(tmp_path: Path):

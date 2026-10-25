@@ -10,10 +10,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENVIRONMENT = ROOT / ".venv"
 PYTHON = ENVIRONMENT / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+PYTHONW = ENVIRONMENT / ("Scripts/pythonw.exe" if os.name == "nt" else "bin/python")
 
 
 def run(*arguments: str, interpreter: Path = PYTHON) -> None:
     subprocess.run([str(interpreter), *arguments], cwd=ROOT, check=True)
+
+
+def launch_windows_tray() -> None:
+    """Start the persistent tray controller without occupying the caller's terminal."""
+    creation_flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    subprocess.Popen(
+        [str(PYTHONW), "-m", "promptlibrary.tray"],
+        cwd=ROOT,
+        creationflags=creation_flags,
+        close_fds=True,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def main() -> None:
@@ -43,7 +58,7 @@ def main() -> None:
             name
             for enabled, name in (
                 (arguments.dev, "dev"),
-                (arguments.desktop, "desktop"),
+                (arguments.desktop or os.name == "nt", "desktop"),
                 (arguments.browsers, "e2e"),
             )
             if enabled
@@ -55,7 +70,10 @@ def main() -> None:
     elif not PYTHON.exists():
         parser.error("Run setup first. This script uses only the checkout's .venv.")
     elif arguments.command == "run":
-        run("-m", "promptlibrary.app")
+        if os.name == "nt":
+            launch_windows_tray()
+        else:
+            run("-m", "promptlibrary.app")
     elif arguments.command == "mcp":
         run("-m", "promptlibrary.mcp.server")
     elif arguments.command == "build":
@@ -69,7 +87,7 @@ def main() -> None:
         if arguments.browsers:
             run("-m", "pytest", "-q", "tests/e2e", "--browser", "chromium")
         if arguments.security:
-            run("-m", "pip_audit", "--strict", "--progress-spinner", "off")
+            run("-m", "pip_audit", "--strict", "--skip-editable", "--progress-spinner", "off")
 
 
 if __name__ == "__main__":

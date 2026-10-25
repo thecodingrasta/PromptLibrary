@@ -15,7 +15,7 @@ from annotated handlers; `mcp/server.py` is the 1.x SDK transport adapter. Its s
 registration helper contains the untyped third-party decorator-factory boundary;
 the handlers and domain services remain checked.
 
-`database.py` owns schema version 3 and transactional migrations. Each request or
+`database.py` owns schema version 4 and transactional migrations. Each request or
 tool call gets a connection with foreign keys and a busy timeout. Writers take
 `BEGIN IMMEDIATE`; errors roll back. SQLite is a single-writer database, not a
 multi-node database server. Keep its live file on a local filesystem rather than

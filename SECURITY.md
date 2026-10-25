@@ -33,7 +33,7 @@ Explicit Host checks help prevent DNS rebinding. Cross-origin writes are refused
 non-browser HTTP writers must send `X-PromptLibrary-Client: 1`. The app does not
 trust forwarded headers. Set `PROMPTLIB_PUBLIC_ORIGIN` for a TLS reverse proxy.
 Responses include a restrictive content security policy. Markdown HTML is escaped,
-harmful link schemes are rejected, and remote images are not loaded automatically.
+harmful link schemes are rejected and remote images are not loaded automatically.
 
 ## Data and credentials
 
@@ -47,7 +47,7 @@ restricted modes; on Windows, directory ACLs must protect the account's data.
 This is at-rest protection against accidental disclosure, not a defence against
 someone who controls the application account. Startup secrets in `.env` remain
 plaintext. Back up the key separately when retaining a native database's remote
-configuration, and never commit either file.
+configuration and never commit either file.
 
 WebDAV requires verified HTTPS except on literal loopback hosts. Redirects are not
 followed. SFTP rejects unknown host keys: verify a server's fingerprint through a

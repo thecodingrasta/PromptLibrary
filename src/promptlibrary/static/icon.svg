@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">PromptLibrary</title>
+  <desc id="desc">A purple prompt card with a white quotation mark.</desc>
+  <rect width="192" height="192" rx="36" fill="#4338ca"/>
+  <rect x="38" y="42" width="116" height="108" rx="16" fill="#fff" opacity=".96"/>
+  <path d="M64 78h56M64 101h42M64 124h28" stroke="#4338ca" stroke-width="12" stroke-linecap="round"/>
+</svg>

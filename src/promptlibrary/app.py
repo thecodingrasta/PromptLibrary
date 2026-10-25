@@ -2,7 +2,10 @@
 
 import argparse
 import logging
+import os
 import sqlite3
+import subprocess
+import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -116,6 +119,28 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="PromptLibrary local web server")
     parser.add_argument("--version", action="version", version=__version__)
     parser.parse_args(argv)
+    if os.name == "nt" and os.environ.get("PROMPTLIB_SERVER_ROLE") != "web-server":
+        environment = os.environ.copy()
+        environment["PROMPTLIB_LAUNCHER_ROLE"] = "tray"
+        creation_flags = int(getattr(subprocess, "DETACHED_PROCESS", 0)) | int(
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        )
+        interpreter = Path(sys.executable)
+        if os.name == "nt":
+            windowless = interpreter.with_name("pythonw.exe")
+            if windowless.exists():
+                interpreter = windowless
+        subprocess.Popen(  # noqa: S603 - executable and arguments are local constants.
+            [str(interpreter), "-m", "promptlibrary.tray", *(argv or [])],
+            env=environment,
+            creationflags=creation_flags,
+            close_fds=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return
+
     configuration = config.settings
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     uvicorn.run(

@@ -102,6 +102,25 @@ async def test_workflow_add_stage(client):
     assert "Research Stage" in r.text
 
 
+@pytest.mark.asyncio
+async def test_workflow_accepts_archive_output_type(client):
+    response = await client.post(
+        "/workflows",
+        data={"name": "Archive workflow", "description": ""},
+    )
+    assert response.status_code == 200
+    import re
+
+    match = re.search(r"/workflows/([a-f0-9-]+)", response.text)
+    assert match
+    response = await client.post(
+        f"/workflows/{match.group(1)}/stages",
+        data={"title": "Archive stage", "output_type": "archive"},
+    )
+    assert response.status_code == 200
+    assert "archive" in response.text
+
+
 # === Categories (full CRUD via HTTP) ===
 
 
@@ -198,3 +217,65 @@ async def test_debug_headers(client):
     r = await client.get("/health")
     assert "x-request-id" in r.headers
     assert "x-response-time" in r.headers
+
+
+@pytest.mark.asyncio
+async def test_inline_category_creation_api(client):
+    response = await client.post("/api/categories", json={"name": "Inline category"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Inline category"
+    assert response.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_quick_prompts_has_active_navigation(client):
+    response = await client.get("/widget")
+    assert response.status_code == 200
+    assert "Quick Prompts" in response.text
+    assert 'aria-label="Quick Prompts"' in response.text
+    assert 'class="active"' in response.text
+
+
+@pytest.mark.asyncio
+async def test_empty_about_help_and_mcp_presentational_contracts(client):
+    empty = await client.get("/")
+    assert "One home for your prompts. Endless ways to put them to work." in empty.text
+    assert "Take the tour" not in empty.text
+    assert 'class="empty-detail interactive-empty"' in empty.text
+    assert 'class="empty-brand brand-image"' in empty.text
+
+    about = await client.get("/about")
+    assert about.status_code == 200
+    assert "A focused workspace for turning scattered ideas into reusable prompts" in about.text
+    assert about.text.count("<details open>") >= 3
+    assert "PromptLibrary" in about.text
+
+    help_page = await client.get("/help")
+    assert help_page.status_code == 200
+    assert "data-help-nav" in help_page.text
+    assert "data-help-content" in help_page.text
+    assert "help-layout" in help_page.text
+
+    settings = await client.get("/settings")
+    assert settings.status_code == 200
+    assert 'role="tablist"' in settings.text
+    assert 'role="tab"' in settings.text
+    assert 'role="tabpanel"' in settings.text
+    assert 'id="panel-storage"' in settings.text
+    assert 'class="is-active"' in settings.text
+    sync = await client.get("/sync")
+    assert sync.status_code == 200
+    assert 'aria-label="Backup sections"' in sync.text
+    assert 'id="panel-export"' in sync.text
+    assert 'id="panel-remote"' in sync.text
+    assert 'id="panel-transfer"' in sync.text
+    assert 'class="is-active"' in sync.text
+    import json
+    import re
+
+    match = re.search(r'<pre id="mcp-config-generic">(.*?)</pre>', settings.text, re.S)
+    assert match
+    configuration = json.loads(match.group(1).strip())
+    assert configuration["command"] == "promptlibrary-mcp"
+    assert configuration["args"] == []
+    assert configuration["env"]["PROMPTLIB_DATA_DIR"]

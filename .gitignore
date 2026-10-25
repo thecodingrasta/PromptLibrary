@@ -27,3 +27,11 @@ test-results/
 playwright-report/
 .DS_Store
 Thumbs.db
+
+# Agents
+.claude/
+.codex/
+.kiro/
+
+# Source design archives remain local; extracted release assets are tracked.
+assets/*.zip

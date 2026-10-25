@@ -89,21 +89,24 @@ def test_workflow_composition_order_and_guided_run(app_page: Page):
     source_form.get_by_label("Source", exact=True).select_option(label=title)
     source_form.get_by_label("Stage title", exact=True).fill("Research")
     source_form.get_by_role("button", name="Add stage", exact=True).click()
+    expect(page.locator(".stage-card h3").filter(has_text="Research")).to_be_visible()
     if not source_form.is_visible():
         page.locator("#add-stage summary").click()
     source_form.get_by_label("Stage title", exact=True).fill("Independent")
     source_form.get_by_label("Body", exact=True).fill("Explain {{TOPIC}}")
     source_form.get_by_role("button", name="Add stage", exact=True).click()
+    expect(page.locator(".stage-card h3").filter(has_text="Independent")).to_be_visible()
     page.get_by_role("button", name="Move Independent up", exact=True).click()
     expect(page.locator(".stage-card h3").first).to_have_text("1. Independent")
     page.get_by_role("button", name="Move Independent down", exact=True).click()
     expect(page.locator(".stage-card h3").first).to_have_text("1. Research")
     page.get_by_label("TOPIC", exact=True).fill("SQLite")
     page.get_by_role("button", name="Start guided run", exact=True).click()
-    expect(page.get_by_label("Rendered input", exact=True)).to_have_value("Research SQLite")
+    page.wait_for_url(re.compile(r"/workflows/runs/"))
+    expect(page.locator("#run-input")).to_have_value("Research SQLite")
     page.get_by_label("Stage output", exact=True).fill("Research output")
     page.get_by_role("button", name="Save output and continue", exact=True).click()
-    expect(page.get_by_label("Rendered input", exact=True)).to_have_value("Explain SQLite")
+    expect(page.locator("#run-input")).to_have_value("Explain SQLite")
     page.get_by_label("Stage output", exact=True).fill("Final output")
     page.get_by_role("button", name="Save output and complete run", exact=True).click()
     expect(page.locator("#detail-panel")).to_contain_text("All stage outputs have been saved.")
@@ -124,3 +127,35 @@ def test_search_and_narrow_layout_keep_detail_and_library_visible(app_page: Page
     expect(page.locator("#detail-panel h1")).to_have_text(name)
     expect(page).to_have_url(re.compile(r"q="))
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+
+def test_settings_backups_tabs_and_empty_state(app_page: Page):
+    page = app_page
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.get_by_role("link", name="Settings", exact=True).click()
+    expect(page.get_by_role("tab", name="Statuses", exact=True)).to_have_attribute(
+        "aria-selected", "true"
+    )
+    page.get_by_role("tab", name="Categories", exact=True).click()
+    expect(page.get_by_role("tabpanel", name="Categories")).to_be_visible()
+    expect(page.get_by_role("tab", name="Categories", exact=True)).to_have_attribute(
+        "aria-selected", "true"
+    )
+    page.get_by_role("tab", name="Storage and access", exact=True).click()
+    expect(page.get_by_role("tabpanel", name="Storage and access")).to_be_visible()
+    page.locator("#sidebar").get_by_role("link", name="Backups", exact=True).click()
+    page.get_by_role("tab", name="Remote configuration", exact=True).click()
+    expect(page.get_by_role("tabpanel", name="Remote configuration")).to_be_visible()
+    page.get_by_role("tab", name="Manual transfer", exact=True).click()
+    expect(page.get_by_role("tabpanel", name="Manual transfer")).to_be_visible()
+    page.get_by_role("link", name="Library", exact=True).click()
+    panel = page.locator("#detail-panel .empty-detail")
+    expect(panel).to_be_visible()
+    bounds = panel.bounding_box()
+    detail_bounds = page.locator("#detail-panel").bounding_box()
+    assert bounds is not None
+    assert detail_bounds is not None
+    assert bounds["width"] < detail_bounds["width"] * 0.7
+    detail_center = detail_bounds["x"] + detail_bounds["width"] / 2
+    panel_center = bounds["x"] + bounds["width"] / 2
+    assert abs(panel_center - detail_center) < 3

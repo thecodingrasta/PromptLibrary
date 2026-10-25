@@ -24,7 +24,7 @@ async def detail_page(
     message: str | None = None,
 ) -> HTMLResponse:
     workflow = await WorkflowService(db).require_workflow(workflow_id)
-    cursor = await db.execute("SELECT id,title FROM prompts ORDER BY title COLLATE NOCASE")
+    cursor = await db.execute("SELECT id,title,body FROM prompts ORDER BY title COLLATE NOCASE")
     available_prompts = [dict(row) for row in await cursor.fetchall()]
     run_error = ""
     try:

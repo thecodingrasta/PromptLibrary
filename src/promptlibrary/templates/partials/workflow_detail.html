@@ -23,9 +23,9 @@
       <form action="/workflows/{{ workflow.id }}/stages/{{ stage.id }}/save{{ query_suffix }}" method="post" data-submit data-dirty-watch data-editor>
         <label>Stage title<input name="title" value="{{ stage.title }}" required maxlength="200"></label>
         {% if stage.prompt_id %}<label class="checkbox"><input type="checkbox" name="detach_prompt" value="true" data-detach-toggle>Detach from the source prompt and edit this copy.</label>{% endif %}
-        <label>Body<textarea name="body" rows="8" maxlength="2000000" {{ 'disabled' if stage.prompt_id }}>{{ stage.body }}</textarea></label>
+        <label>Body<textarea aria-label="Body" name="body" rows="8" maxlength="2000000" {{ 'disabled' if stage.prompt_id }}>{{ stage.body }}</textarea></label>
         <label>Runner instructions<textarea name="instructions" rows="3" maxlength="200000">{{ stage.instructions }}</textarea></label>
-        <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}" {{ 'selected' if mode == stage.mode }}>{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json'] %}<option value="{{ kind }}" {{ 'selected' if kind == stage.output_type }}>{{ kind }}</option>{% endfor %}</select></label></div>
+        <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}" {{ 'selected' if mode == stage.mode }}>{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json','archive','media'] %}<option value="{{ kind }}" {{ 'selected' if kind == stage.output_type }}>{{ kind }}</option>{% endfor %}</select></label></div>
         <button type="submit">Save stage</button>
       </form>
     </details>
@@ -33,19 +33,19 @@
   </article>
   {% else %}<p>No stages yet. Add a new stage or an existing prompt below.</p>{% endfor %}
   </section>
-  <details id="add-stage" {% if not workflow.stages %}open{% endif %}><summary>Add a stage or existing prompt</summary>
+  <details id="add-stage" open><summary>Add a stage or existing prompt</summary>
     <form action="/workflows/{{ workflow.id }}/stages{{ query_suffix }}" method="post" data-submit data-dirty-watch data-stage-source>
-      <label>Source<select aria-label="Source" name="prompt_id" data-prompt-source><option value="">Write a new stage</option>{% for prompt in available_prompts %}<option value="{{ prompt.id }}">{{ prompt.title }}</option>{% endfor %}</select></label>
+      <label>Source<select aria-label="Source" name="prompt_id" data-prompt-source><option value="">Write a new stage</option>{% for prompt in available_prompts %}<option value="{{ prompt.id }}" data-body="{{ prompt.body }}">{{ prompt.title }}</option>{% endfor %}</select></label>
       <label class="checkbox"><input name="link_prompt" type="checkbox" value="true">Keep linked to the source prompt instead of copying it.</label>
       <label>Stage title<input name="title" required maxlength="200"></label>
       <label>Body<textarea name="body" rows="8" maxlength="2000000" placeholder="{{ 'Research {{TOPIC}} or build on {{stage_1_output}}.' }}"></textarea></label>
       <label>Runner instructions<textarea name="instructions" rows="3" maxlength="200000"></textarea></label>
-      <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}">{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json'] %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}</select></label></div>
+      <div class="form-grid"><label>Mode<select aria-label="Mode" name="mode">{% for mode in ['standard','deep_research','high_reasoning','extra_high_reasoning'] %}<option value="{{ mode }}">{{ mode | replace('_',' ') | capitalize }}</option>{% endfor %}</select></label><label>Output type<select aria-label="Output type" name="output_type">{% for kind in ['text','markdown','code','json','archive','media'] %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}</select></label></div>
       <p class="muted">Mode and output type guide the runner. They do not change a model or enforce its output format.</p>
       <button class="primary" type="submit">Add stage</button>
     </form>
   </details>
-  <section id="workflow-run"><h2>Run this workflow</h2><p>Copy each rendered stage to your chosen AI tool, paste its output back here, and continue. An agent can do the same through MCP.</p>
+  <section id="workflow-run"><h2>Run this workflow</h2><p>Copy each rendered stage to your chosen AI tool, paste its output back here and continue. An agent can do the same through MCP.</p>
     {% if run_error %}<p class="notice error">{{ run_error }}</p>{% elif workflow.stages %}
     <form action="/workflows/{{ workflow.id }}/runs{{ query_suffix }}" method="post" data-submit data-dirty-watch>
       {% for name in inputs %}<label>{{ name }}<textarea name="input:{{ name }}" rows="3" required maxlength="2000000"></textarea></label>{% endfor %}

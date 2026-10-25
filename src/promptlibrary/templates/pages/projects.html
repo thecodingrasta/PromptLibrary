@@ -12,9 +12,16 @@
     <div class="actions"><a href="/?project_id={{ project.id }}" class="button primary" data-nav>View prompts and workflows</a>
       <form action="/projects/{{ project.id }}/{{ 'unarchive' if project.is_archived else 'archive' }}" method="post" data-submit><button type="submit">{{ 'Unarchive' if project.is_archived else 'Archive' }}</button></form>
     </div>
-    <details><summary>Edit project</summary><form action="/projects/{{ project.id }}/save" method="post" data-submit data-dirty-watch>
-      <label>Name<input name="name" value="{{ project.name }}" required maxlength="200"></label><label>Colour<input name="colour" type="color" value="{{ project.colour or '#6366f1' }}"></label><label>Description<textarea name="description" rows="3" maxlength="2000000">{{ project.description }}</textarea></label><button type="submit">Save project</button>
-    </form></details>
+    <button type="button" data-project-edit="{{ project.id }}">Edit project</button>
+    <dialog id="project-edit-{{ project.id }}" class="project-dialog" aria-labelledby="project-edit-title-{{ project.id }}">
+      <form action="/projects/{{ project.id }}/save" method="post" data-submit data-dirty-watch>
+        <h2 id="project-edit-title-{{ project.id }}">Edit project</h2>
+        <label>Name<input name="name" value="{{ project.name }}" required maxlength="200" autofocus></label>
+        <label>Colour<input name="colour" type="color" value="{{ project.colour or '#6366f1' }}"></label>
+        <label>Description<textarea name="description" rows="5" maxlength="2000000">{{ project.description }}</textarea></label>
+        <div class="actions"><button class="primary" type="submit">Save project</button><button type="button" data-project-close>Cancel</button></div>
+      </form>
+    </dialog>
     <form action="/projects/{{ project.id }}/delete" method="post" data-submit data-confirm="Delete this project? Its prompts and workflows will remain in the library, without a project assignment." data-confirm-label="Delete project"><button type="submit" class="danger subtle">Delete project</button></form>
   </section>{% else %}<p>No projects yet.</p>{% endfor %}</div>
 </div>

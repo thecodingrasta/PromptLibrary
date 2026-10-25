@@ -22,3 +22,8 @@ for visible behaviour and preserve licences and notices.
 Do not commit caches, databases, credentials, screenshots containing private data,
 internal plans or fabricated validation evidence. Do not publish a release or
 change remote repository settings unless the user explicitly requests that action.
+
+
+## Cross-platform browser guidance
+
+Browser choice belongs to the developer and validation environment. Use an installed, supported Playwright browser for local journeys, keep browser-specific setup explicit and report missing binaries or system libraries as unverified gates rather than passing results. Use temporary data directories and report security-audit findings separately from functional and browser results.

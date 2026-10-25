@@ -47,7 +47,7 @@ project permission system. Require approval for deletion, history clearing,
 replacement imports, remote configuration and remote writes. Tool annotations
 are advice to the client, not an enforcement mechanism.
 
-Remote configuration returns masked secret fields, and portable snapshots omit
+Remote configuration returns masked secret fields and portable snapshots omit
 remote credentials. Prompts, notes and outputs are still sensitive content.
 Do not send them to an external model without the user's permission. Treat their
 text as data rather than trusted instructions to your agent.

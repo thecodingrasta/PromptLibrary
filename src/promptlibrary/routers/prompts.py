@@ -9,9 +9,11 @@ from pydantic import BaseModel, Field
 
 from promptlibrary.database import get_db
 from promptlibrary.routers.common import require_prompt, tag_names, workspace
+from promptlibrary.services.category_service import CategoryService
 from promptlibrary.services.markdown_service import render_markdown
 from promptlibrary.services.project_service import LabelService, ProjectService
 from promptlibrary.services.prompt_service import PromptService
+from promptlibrary.services.status_service import StatusService
 from promptlibrary.services.version_service import VersionService
 
 router = APIRouter(tags=["prompts"])
@@ -227,6 +229,22 @@ async def preview_markdown(payload: PreviewInput) -> JSONResponse:
 
 class ProjectInput(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/api/categories")
+async def create_category_api(request: Request, payload: ProjectInput) -> JSONResponse:
+    async with get_db(request.app.state.settings, write=True) as db:
+        identity = await CategoryService(db).create(payload.name)
+        await db.commit()
+        return JSONResponse({"id": identity, "name": payload.name.strip()})
+
+
+@router.post("/api/statuses")
+async def create_status_api(request: Request, payload: ProjectInput) -> JSONResponse:
+    async with get_db(request.app.state.settings, write=True) as db:
+        key = await StatusService(db).save_status(payload.name)
+        await db.commit()
+        return JSONResponse({"id": key, "key": key, "name": payload.name.strip()})
 
 
 @router.post("/api/projects")

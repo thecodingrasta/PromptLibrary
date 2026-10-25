@@ -1,0 +1,14 @@
+{
+  "name": "PromptLibrary",
+  "short_name": "PromptLibrary",
+  "description": "A focused, self-hosted library for prompts and guided workflows.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0C1328",
+  "theme_color": "#087BFA",
+  "icons": [
+    {"src": "/static/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/static/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

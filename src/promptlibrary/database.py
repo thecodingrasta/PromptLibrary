@@ -7,7 +7,7 @@ import aiosqlite
 
 from promptlibrary.config import Settings, settings
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA_SQL = """
 -- Core version tracking
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS workflow_stages (
     mode TEXT NOT NULL DEFAULT 'standard' CHECK (mode IN ('standard', 'deep_research',
     'high_reasoning', 'extra_high_reasoning')),
     output_type TEXT NOT NULL DEFAULT 'text' CHECK (output_type IN ('text', 'markdown', 'code',
-    'json')),
+    'json', 'archive', 'media')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(workflow_id, stage_number)
 );
@@ -335,6 +335,31 @@ async def init_db(configuration: Settings | None = None) -> None:
                     columns = {row["name"] for row in await cursor.fetchall()}
                     if columns and column not in columns:
                         await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            if 0 < version < 4:
+                await db.execute("""CREATE TABLE workflow_stages_v4 (
+                    id TEXT PRIMARY KEY,
+                    prompt_id TEXT REFERENCES prompts(id) ON DELETE SET NULL,
+                    workflow_id TEXT NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+                    stage_number INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    body TEXT NOT NULL DEFAULT '',
+                    instructions TEXT NOT NULL DEFAULT '',
+                    variables_json TEXT NOT NULL DEFAULT '[]',
+                    mode TEXT NOT NULL DEFAULT 'standard' CHECK (mode IN ('standard',
+                    'deep_research', 'high_reasoning', 'extra_high_reasoning')),
+                    output_type TEXT NOT NULL DEFAULT 'text' CHECK (output_type IN ('text',
+                    'markdown', 'code', 'json', 'archive', 'media')),
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(workflow_id, stage_number)
+                )""")
+                await db.execute("""INSERT INTO workflow_stages_v4
+                    (id,prompt_id,workflow_id,stage_number,title,body,instructions,variables_json,
+                     mode,output_type,created_at)
+                    SELECT id,prompt_id,workflow_id,stage_number,title,body,instructions,
+                           variables_json,mode,output_type,created_at
+                    FROM workflow_stages""")
+                await db.execute("DROP TABLE workflow_stages")
+                await db.execute("ALTER TABLE workflow_stages_v4 RENAME TO workflow_stages")
             # executescript commits implicitly, so execute statements separately.
             for statement in SCHEMA_SQL.split(";"):
                 if statement.strip():
