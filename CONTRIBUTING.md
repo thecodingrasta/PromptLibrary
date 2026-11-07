@@ -48,7 +48,15 @@ assertions with skips to make a build green. Keep failed checks visible.
 
 Describe the problem, the change, compatibility implications and the checks you
 actually ran. Include screenshots for visual changes, but no personal library
-content or credentials. Update the user guide when behaviour changes. State any
+content or credentials. Update the user guide when behaviour changes.
+
+The standalone executables are built by PyInstaller from `packaging/promptlibrary.spec`. If you add a module that is imported dynamically or a data file the code reads at run time, update the spec and the lists in `src/promptlibrary/selfcheck.py`, then run `python scripts/build_binary.py` and `python scripts/binary_smoke.py "dist-binary/promptlibrary-*"`. Code that starts another PromptLibrary process must use `promptlibrary.runtime.child_command`, because a frozen executable has no `python -m`.
+
+The README and [MCP usage](docs/mcp.md) show screenshots from
+`assets/screenshots/`. When a change visibly alters one of those screens, replace the
+image in the same pull request. Capture it from a temporary data directory with sample
+content only, and check that no local usernames, file paths, tokens or personal
+prompts appear in the image. State any
 use of generated code that materially affected the change and review it yourself.
 
 The licence is GPL-3.0-or-later. Submit only work you have permission to contribute;

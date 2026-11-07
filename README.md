@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/thecodingrasta/PromptLibrary/actions/workflows/ci.yml/badge.svg)](https://github.com/thecodingrasta/PromptLibrary/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/thecodingrasta/PromptLibrary)](https://github.com/thecodingrasta/PromptLibrary/releases)
-[![License](https://img.shields.io/github/license/thecodingrasta/PromptLibrary)](COPYING)
+[![License](https://img.shields.io/github/license/thecodingrasta/PromptLibrary)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-local%20stdio-6f42c1)](docs/mcp.md)
 
@@ -14,13 +14,19 @@ PromptLibrary is a self-hosted library for prompts and ordered workflows. It com
 
 > **Status:** PromptLibrary is actively maintained. Read the [changelog](CHANGELOG.md), [release checks](docs/releasing.md) and [security boundary](SECURITY.md) before adopting it for important data.
 
+<p align="center">
+  <a href="assets/screenshots/main-view.png"><img src="assets/screenshots/main-view.png" alt="The PromptLibrary workspace: a searchable library of prompts and workflows beside a welcome panel with Create a prompt and Build a workflow actions." width="100%"></a>
+</p>
+
 <details>
 <summary><strong>Jump to a section</strong></summary>
 
 - [What it does](#what-it-does)
+- [Screenshots](#screenshots)
 - [What it deliberately does not do](#what-it-deliberately-does-not-do)
 - [Use cases](#use-cases)
-- [Quick start](#quick-start)
+- [Download and run](#download-and-run)
+- [Run from source](#run-from-source)
 - [First steps](#first-steps)
 - [Workflows and guided runs](#workflows-and-guided-runs)
 - [MCP access](#mcp-access)
@@ -45,6 +51,33 @@ PromptLibrary is a self-hosted library for prompts and ordered workflows. It com
 - **Connect agents through MCP.** The browser and MCP interfaces use the same services, validation, transactions and SQLite data.
 - **Work locally on desktop or server.** Windows provides an optional branded notification-area controller; Linux and macOS can run the browser server directly or under an operating-system service manager.
 
+## Screenshots
+
+Select any image to view it at full size.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="assets/screenshots/new-prompt.png"><img src="assets/screenshots/new-prompt.png" alt="The New prompt editor with title, status, project, category and tag fields, typed labels and a Markdown toolbar above the prompt body." width="100%"></a>
+      <br><sub><strong>Write prompts.</strong> Organise with statuses, projects, categories, tags and typed labels, then edit the Markdown body with <code>{{VARIABLE}}</code> placeholders.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="assets/screenshots/workflows.png"><img src="assets/screenshots/workflows.png" alt="A workflow named Deep Research showing numbered stages, each linked to a source prompt, with controls to reorder, view, edit and delete." width="100%"></a>
+      <br><sub><strong>Compose workflows.</strong> Order stages, link them to live prompts and keep output references aligned when you reorder.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="assets/screenshots/help-guide.png"><img src="assets/screenshots/help-guide.png" alt="The built-in guide with a search box, a sticky sections list and the user guide text." width="100%"></a>
+      <br><sub><strong>Learn in the app.</strong> The built-in guide is searchable and split into short sections with a sticky contents list.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="assets/screenshots/mcp-access.png"><img src="assets/screenshots/mcp-access.png" alt="The Settings page on the MCP access tab showing a copyable stdio configuration and the promptlibrary-mcp command." width="100%"></a>
+      <br><sub><strong>Connect agents.</strong> Copy a ready-made <a href="docs/mcp.md">MCP</a> stdio configuration from Settings.</sub>
+    </td>
+  </tr>
+</table>
+
 ## What it deliberately does not do
 
 PromptLibrary does **not** call models, execute shell commands, schedule agents, merge concurrent remote edits, provide multi-user permissions, or run workflow stages autonomously. Stage modes and output types are guidance for the human or agent operating each stage, not provider settings or output enforcement.
@@ -65,10 +98,124 @@ See the [user guide](src/promptlibrary/content/user-guide.md) for the complete u
 | Built-in model inference or autonomous execution | Not provided |
 | Automatic bidirectional synchronisation | Not provided |
 
-## Quick start
+## Download and run
 
-Install Python 3.12 or newer, extract or clone the repository and open a terminal in its root. Installation downloads the declared Python packages; normal local use does not need an internet connection after setup.
+Every [release](https://github.com/thecodingrasta/PromptLibrary/releases/latest) includes a standalone executable for Windows (x64), Linux (x64 and arm64) and macOS (Apple silicon). It bundles Python and every dependency, so there is nothing to install: download the file for your system, then run it.
 
+| System | CPU | File to download |
+| --- | --- | --- |
+| Windows 10 or 11 | Intel or AMD (x64) | `promptlibrary-<version>-windows-x64.exe` |
+| Linux (glibc 2.35 or newer) | Intel or AMD (x64) | `promptlibrary-<version>-linux-x64` |
+| Linux (glibc 2.35 or newer) | Arm (arm64) | `promptlibrary-<version>-linux-arm64` |
+| macOS | Apple silicon (arm64) | `promptlibrary-<version>-macos-arm64` |
+
+**Windows on Arm and Intel Macs:** there is no standalone executable for these two yet, because the `cryptography` package does not publish a patched build for them. Use the [Python route](#run-from-source) (`python -m pip install` of the wheel from the release) or the [Docker image](#docker). Both work on those systems.
+
+Not sure which CPU you have? On Windows run `$env:PROCESSOR_ARCHITECTURE` in PowerShell (`AMD64` is x64). On Linux and macOS run `uname -m` (`x86_64` is x64, and `arm64` or `aarch64` is arm64).
+
+Each release also lists `SHA256SUMS.txt`, the Python wheel (`.whl`) and the source archive (`.tar.gz`). The wheel and source archive are for people who already use Python; most people only need the executable.
+
+<details open>
+<summary><strong>Windows</strong></summary>
+
+Double-click the downloaded `.exe`, or run it from PowerShell:
+
+```powershell
+.\promptlibrary-<version>-windows-x64.exe
+```
+
+PromptLibrary opens no terminal window. It adds a branded icon to the notification area (check the hidden-icons menu) and shows a notification with the address, which is `http://127.0.0.1:8000` unless that port is busy. The icon menu opens PromptLibrary, stops its web server or quits the controller. If another application already uses port 8000, PromptLibrary attaches to its own running instance or picks the next free port from 8001.
+
+The executable is not code-signed yet, so Windows SmartScreen may show **Windows protected your PC**. Choose **More info**, then **Run anyway**, after you have checked the file against `SHA256SUMS.txt`.
+
+The same file provides the command-line tools. Run these from PowerShell:
+
+```powershell
+.\promptlibrary-<version>-windows-x64.exe --version
+.\promptlibrary-<version>-windows-x64.exe maintenance doctor
+.\promptlibrary-<version>-windows-x64.exe mcp --print-config
+```
+
+</details>
+
+<details>
+<summary><strong>Linux</strong></summary>
+
+Browsers do not keep the executable permission on downloaded files, so set it first:
+
+```sh
+chmod +x promptlibrary-*-linux-x64
+./promptlibrary-*-linux-x64
+```
+
+Open `http://127.0.0.1:8000` in the browser of your choice. The server runs in the terminal; press Ctrl+C to stop it. To keep it running in the background, use `systemd`, `tmux` or another service manager.
+
+The Linux executables need glibc 2.35 or newer, which covers Ubuntu 22.04 and later, Debian 12 and later, Fedora and most current distributions. They do not run on musl-based systems such as Alpine; use the [Docker image](#docker) there.
+
+</details>
+
+<details>
+<summary><strong>macOS</strong></summary>
+
+```sh
+chmod +x promptlibrary-*-macos-arm64
+./promptlibrary-*-macos-arm64
+```
+
+Open `http://127.0.0.1:8000` in your browser. The server runs in the terminal; press Ctrl+C to stop it.
+
+The executables are not signed or notarised by Apple. If macOS says it cannot verify the developer, remove the download quarantine flag after you have checked the file against `SHA256SUMS.txt`:
+
+```sh
+xattr -d com.apple.quarantine promptlibrary-*-macos-arm64
+```
+
+You can also open **System Settings**, then **Privacy & Security**, and choose **Open Anyway** after the first blocked attempt.
+
+</details>
+
+<details>
+<summary><strong>Verify your download</strong></summary>
+
+Download `SHA256SUMS.txt` next to the file and compare the hashes.
+
+```powershell
+# Windows
+Get-FileHash .\promptlibrary-<version>-windows-x64.exe -Algorithm SHA256
+```
+
+```sh
+# Linux
+sha256sum --ignore-missing -c SHA256SUMS.txt
+# macOS
+shasum -a 256 --ignore-missing -c SHA256SUMS.txt
+```
+
+On Windows, compare the printed hash with the matching line in `SHA256SUMS.txt`.
+
+</details>
+
+### Using the executable
+
+The executable is one program with subcommands. With no subcommand it starts the web interface.
+
+| Command | Purpose |
+| --- | --- |
+| `promptlibrary` | Start the web interface (the tray controller on Windows) |
+| `promptlibrary serve` | Run the web server in this terminal, never the tray |
+| `promptlibrary mcp` | Run the [MCP](docs/mcp.md) stdio server for coding agents |
+| `promptlibrary mcp --print-config` | Print an MCP client configuration that points at this file |
+| `promptlibrary maintenance doctor` | Check the database without changing it |
+| `promptlibrary self-check` | Confirm this file contains every module and resource it needs |
+| `promptlibrary --version` | Print the version |
+
+Your library is stored in a per-user data directory, not next to the executable. Moving or replacing the executable does not move your data. Settings come from `PROMPTLIB_*` environment variables or a `.env` file in the directory you start it from; see [Configuration](docs/configuration.md).
+
+To connect an agent, open **Settings**, then **MCP access**. It shows a configuration that already names your executable, or run `promptlibrary mcp --print-config`.
+
+## Run from source
+
+Use this route to contribute or to run the latest unreleased code. Install Python 3.12 or newer, extract or clone the repository and open a terminal in its root. Installation downloads the declared Python packages; normal local use does not need an internet connection after setup.
 <details open>
 <summary><strong>Windows</strong></summary>
 
@@ -95,6 +242,17 @@ Open `http://127.0.0.1:8000` in the browser of your choice. Keep the terminal op
 
 <details>
 <summary><strong>Installed package</strong></summary>
+
+From a release, download the `.whl` file and install it with Python 3.12 or newer. This is the route for Windows on Arm and Intel Macs, which have no standalone executable:
+
+```sh
+python -m pip install ./promptlibrary-<version>-py3-none-any.whl
+promptlibrary
+```
+
+On Windows, add the tray controller with `python -m pip install "./promptlibrary-<version>-py3-none-any.whl[desktop]"`.
+
+From a checkout:
 
 ```sh
 python -m pip install .
@@ -190,6 +348,16 @@ python -m pytest -q tests/integration/test_mcp_stdio.py
 python -m pytest -q tests/e2e --browser <installed-browser>
 ```
 
+To build and test the standalone executable for your own platform:
+
+```sh
+python -m pip install -e ".[binary]"
+python scripts/build_binary.py
+python scripts/binary_smoke.py "dist-binary/promptlibrary-*"
+```
+
+PyInstaller cannot cross-compile, so each executable is built on a runner of its own operating system and CPU. See [docs/releasing.md](docs/releasing.md).
+
 Choose any supported, installed Playwright browser for local journeys. CI covers native platforms, multiple browser engines, package installation and Docker smoke behavior. A workflow definition is not evidence that its job passed; release sign-off requires the exact-commit checks in [docs/releasing.md](docs/releasing.md).
 
 ## Architecture
@@ -227,4 +395,4 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CO
 
 For usage questions and reproducible bugs, see [SUPPORT.md](SUPPORT.md). Include the application version, operating system, Python version, installation method, reproduction steps and request ID where available. Use invented prompt content and temporary data when sharing diagnostics.
 
-PromptLibrary is licensed under [GNU GPL-3.0-or-later](COPYING). See [NOTICE](NOTICE) for retained third-party attributions. This licence applies to the application, not to your prompts, notes, or workflow outputs.
+PromptLibrary is licensed under [GNU GPL-3.0-or-later](LICENSE). See [NOTICE](NOTICE) for retained third-party attributions. This licence applies to the application, not to your prompts, notes, or workflow outputs.

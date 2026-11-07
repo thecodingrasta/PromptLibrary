@@ -73,7 +73,7 @@ def test_sidebar_icons_theme_and_help_literals(app_page: Page):
     expect(page.locator("#main")).to_contain_text("{{TOPIC}}")
     expect(page.locator("#main")).to_contain_text("{{stage_1_output}}")
     page.locator("#sidebar").get_by_role("link", name="About", exact=True).click()
-    expect(page.locator("#main")).to_contain_text("1.0.0")
+    expect(page.locator("#main")).to_contain_text("0.1.3")
     expect(page.locator("#main")).to_contain_text("GPL")
 
 

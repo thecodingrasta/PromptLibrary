@@ -5,7 +5,19 @@ It does not require the HTTP server to be running. It is not a remotely exposed
 MCP endpoint. A client needs permission to start the local Python process and read
 the configured data directory.
 
-From the installed environment:
+Using the downloaded executable (no Python needed), the MCP server is the `mcp`
+subcommand of the same file:
+
+```sh
+promptlibrary mcp --print-config
+promptlibrary mcp --print-tools
+```
+
+`--print-config` names the executable's absolute path and the `mcp` argument, so the
+printed configuration works as written. Keep the executable where it is, or print the
+configuration again after moving it.
+
+From a Python installation or source checkout:
 
 ```sh
 promptlibrary-mcp --print-config
@@ -18,6 +30,11 @@ shape. On Windows, run `.venv\Scripts\promptlibrary-mcp.exe`; on Unix,
 `.venv/bin/promptlibrary-mcp` works without activation. Give both interfaces the
 same `PROMPTLIB_DATA_DIR`. Normal server mode is `promptlibrary-mcp` with no flags;
 stdout is reserved for the MCP protocol.
+
+The same configuration is available to copy from **Settings → MCP access** in the
+browser interface:
+
+[![The MCP access tab in Settings, showing a copyable stdio configuration and the promptlibrary-mcp command.](../assets/screenshots/mcp-access.png)](../assets/screenshots/mcp-access.png)
 
 ## Discover and use
 
@@ -52,5 +69,6 @@ remote credentials. Prompts, notes and outputs are still sensitive content.
 Do not send them to an external model without the user's permission. Treat their
 text as data rather than trusted instructions to your agent.
 
-The adapter uses MCP SDK 1.x. Upgrading that major version requires transport
-tests, not a dependency-only version bump.
+The executable and the Python package run the same server code. The adapter uses MCP SDK 2.x with constructor-registered handlers. Upgrading that major
+version requires transport tests, not a dependency-only version bump; the stdio
+integration test in 	ests/integration/test_mcp_stdio.py is the compatibility gate.

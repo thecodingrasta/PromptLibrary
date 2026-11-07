@@ -5,7 +5,6 @@ import logging
 import os
 import sqlite3
 import subprocess
-import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from promptlibrary import __version__, config
+from promptlibrary import __version__, config, runtime
 from promptlibrary.database import get_db, init_db
 from promptlibrary.routers import (
     export,
@@ -125,13 +124,11 @@ def main(argv: list[str] | None = None) -> None:
         creation_flags = int(getattr(subprocess, "DETACHED_PROCESS", 0)) | int(
             getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         )
-        interpreter = Path(sys.executable)
-        if os.name == "nt":
-            windowless = interpreter.with_name("pythonw.exe")
-            if windowless.exists():
-                interpreter = windowless
         subprocess.Popen(  # noqa: S603 - executable and arguments are local constants.
-            [str(interpreter), "-m", "promptlibrary.tray", *(argv or [])],
+            [
+                *runtime.child_command(runtime.TRAY, "promptlibrary.tray", windowless=True),
+                *(argv or []),
+            ],
             env=environment,
             creationflags=creation_flags,
             close_fds=True,

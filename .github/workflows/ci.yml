@@ -16,8 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install ".[dev]"
@@ -29,16 +29,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - run: python -m pip install --upgrade pip
       - run: python -m pip install ".[dev,desktop]"
       - run: python -m ruff check .
       - run: python -m ruff format --check .
       - run: python -m mypy src/promptlibrary
       - run: python scripts/check_release_assets.py
-      - run: python -m pip_audit --strict --skip-editable --progress-spinner off
+      - run: python scripts/audit_dependencies.py
   browser:
     strategy:
       fail-fast: false
@@ -47,14 +48,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: python -m pip install ".[e2e]"
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest -q tests/e2e --browser chromium --tracing retain-on-failure --screenshot only-on-failure
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: browser-failure-${{ matrix.os }}
@@ -64,8 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: python -m pip install ".[e2e]"
@@ -76,23 +77,69 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: python -m pip install build
       - run: python -m build
       - run: python scripts/package_smoke.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+  binaries:
+    name: Binary ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x64
+            runner: windows-latest
+            extras: binary,desktop,audit
+          # Not built yet: windows-arm64 (runner windows-11-arm) and macos-x64 (runner
+          # macos-15-intel). cryptography publishes no patched wheel for either, so a build
+          # would fail to compile or bundle a version with known advisories. Re-enable them
+          # when cryptography 50 or newer ships wheels. See docs/releasing.md.
+          # Linux binaries are built on the oldest supported Ubuntu so that they run on any
+          # distribution with glibc 2.35 or newer.
+          - target: linux-x64
+            runner: ubuntu-22.04
+            extras: binary,audit
+          - target: linux-arm64
+            runner: ubuntu-22.04-arm
+            extras: binary,audit
+          - target: macos-arm64
+            runner: macos-15
+            extras: binary,audit
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: python -m pip install --upgrade pip
+      # Prefer prebuilt wheels so a missing wheel is reported instead of compiling from source.
+      - run: python -m pip install --prefer-binary ".[${{ matrix.extras }}]"
+      # Audit what this exact binary will bundle. The quality job only audits Linux, where
+      # newer wheels exist than on some other targets.
+      - run: python scripts/audit_dependencies.py
+      - run: python scripts/build_binary.py
+      - name: Smoke-test the executable
+        run: python scripts/binary_smoke.py dist-binary/promptlibrary-*-${{ matrix.target }}*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist-binary/promptlibrary-*
           if-no-files-found: error
           retention-days: 14
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build --tag promptlibrary:test .
       - run: python scripts/docker_smoke.py

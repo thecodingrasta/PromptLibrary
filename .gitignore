@@ -11,6 +11,7 @@ coverage.xml
 junit*.xml
 build/
 dist/
+dist-binary/
 *.egg-info/
 .env
 .env.*

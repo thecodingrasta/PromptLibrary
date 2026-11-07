@@ -1,5 +1,21 @@
 # Troubleshooting
 
+## Downloaded executable will not start
+
+**Windows shows "Windows protected your PC".** The executable is not code-signed. Compare its hash with `SHA256SUMS.txt`, then choose **More info** and **Run anyway**.
+
+**macOS says the developer cannot be verified or the file is damaged.** The executable is not signed or notarised. After checking the hash, run `xattr -d com.apple.quarantine <file>` and start it again, or choose **Open Anyway** in **System Settings**, **Privacy & Security**.
+
+**Linux reports "Permission denied".** Browsers drop the executable bit. Run `chmod +x <file>`.
+
+**Linux reports `GLIBC_2.35 not found` or `not found` on a file that exists.** The system has an older glibc than the executable needs, or it uses musl (Alpine). Use a newer distribution or the [Docker image](../README.md#docker).
+
+**The Windows icon is missing.** Look in the hidden-icons menu of the notification area. If it is not there, read `tray.log` in the data directory. The log records start-up errors, and a failed start also shows a message box.
+
+**Nothing opens on Linux or macOS.** These builds run the server in the terminal. Open `http://127.0.0.1:8000` yourself and keep the terminal open.
+
+Run `promptlibrary self-check` to confirm the file contains every module and resource it needs. It prints a JSON report and exits non-zero on failure. Include that report if you open an issue.
+
 ## Python or installation failure
 
 Run `python --version` or `py -3 --version`. Python 3.12 or newer is required.

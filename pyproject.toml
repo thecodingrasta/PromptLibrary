@@ -1,6 +1,6 @@
 [project]
 name = "promptlibrary"
-version = "1.0.0"
+version = "0.1.3"
 description = "A self-hosted prompt management application with versioning, guided workflows, backups, and MCP access."
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -18,18 +18,18 @@ classifiers = [
 ]
 
 dependencies = [
-    "fastapi>=0.128.2,<1",
+    "fastapi>=0.146.0,<1",
     "uvicorn>=0.48.0,<1",
     "jinja2>=3.1.6,<4",
     "aiosqlite>=0.22.1,<1",
     "mistune>=3.2.1,<4",
     "pygments>=2.18.0",
     "pydantic>=2.13.4,<3",
-    "pydantic-settings>=2.14.1,<3",
+    "pydantic-settings>=2.16.0,<3",
     "python-multipart>=0.0.29,<1",
     "httpx>=0.28.1,<1",
-    "mcp>=1.26.0,<2",
-    "paramiko>=3.5.0,<5",
+    "mcp>=2.3.0,<3",
+    "paramiko>=5.1.0,<6",
     "boto3>=1.43.18,<2",
     "defusedxml>=0.7.1",
     "cryptography>=46.0.4",
@@ -43,7 +43,7 @@ dev = [
     "ruff==0.16.6",
     "build>=1.2.2",
     "pytest-cov>=7.0",
-    "pip-audit>=2.9",
+    "pip-audit>=2.10.1",
     "types-defusedxml",
     "types-Pygments",
     "types-paramiko",
@@ -60,6 +60,12 @@ e2e = [
 desktop = [
     "pystray>=0.19.5",
     "Pillow>=11.0.0",
+]
+binary = [
+    "pyinstaller>=6.22.3,<7",
+]
+audit = [
+    "pip-audit>=2.10.1",
 ]
 
 [project.scripts]

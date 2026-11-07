@@ -3,7 +3,6 @@
 import json
 import os
 import sys
-from datetime import timedelta
 from pathlib import Path
 
 import anyio
@@ -21,9 +20,7 @@ async def test_stdio_discovery_mutation_resource_and_error(tmp_path: Path):
     )
     with anyio.fail_after(30):
         async with stdio_client(parameters) as (reader, writer):
-            async with ClientSession(
-                reader, writer, read_timeout_seconds=timedelta(seconds=10)
-            ) as client:
+            async with ClientSession(reader, writer, read_timeout_seconds=10) as client:
                 await client.initialize()
                 discovered = await client.list_tools()
                 names = {item.name for item in discovered.tools}
@@ -36,17 +33,17 @@ async def test_stdio_discovery_mutation_resource_and_error(tmp_path: Path):
                 created = await client.call_tool(
                     "create_prompt", {"title": "Wire test", "body": "Useful"}
                 )
-                assert not created.isError
+                assert not created.is_error
                 assert isinstance(created.content[0], TextContent)
                 identity = json.loads(created.content[0].text)["id"]
                 retrieved = await client.call_tool("get_prompt", {"id": identity})
-                assert not retrieved.isError
+                assert not retrieved.is_error
                 assert isinstance(retrieved.content[0], TextContent)
                 assert json.loads(retrieved.content[0].text)["body"] == "Useful"
                 rejected = await client.call_tool(
                     "create_prompt", {"title": "Bad", "secret": "do-not-echo"}
                 )
-                assert rejected.isError
+                assert rejected.is_error
                 assert "do-not-echo" not in rejected.model_dump_json()
                 stats = await client.read_resource("library://stats")
                 assert stats.contents

@@ -24,7 +24,7 @@ Do not fabricate a lock or vulnerability result when package access is unavailab
 
 ## Repository and publication
 
-Confirm README, guide, help, About, package metadata, COPYING and NOTICE agree.
+Confirm README, guide, help, About, package metadata, LICENSE and NOTICE agree.
 Review the final archive for credentials, databases, caches, private screenshots,
 internal notes and stale artefacts. Preserve third-party licence notices.
 
@@ -42,6 +42,31 @@ workflow does not publish to PyPI or push container images automatically.
 Keep validation reports truthful: include tool versions, commands, pass/fail counts
 and unavailable environments. Do not label an untested platform as certified.
 
+
+## Standalone executables
+
+Each release carries four standalone executables built with PyInstaller from `packaging/promptlibrary.spec`: Windows x64, Linux x64 and arm64, and macOS arm64. They are the files most users download, so they are a release gate rather than an extra.
+
+The `binaries` job in `.github/workflows/ci.yml` builds each one on a native runner, because PyInstaller cannot cross-compile:
+
+| Target | Runner |
+| --- | --- |
+| `windows-x64` | `windows-latest` |
+| `linux-x64` | `ubuntu-22.04` |
+| `linux-arm64` | `ubuntu-22.04-arm` |
+| `macos-arm64` | `macos-15` |
+
+The Linux builds use the oldest supported Ubuntu so the files run on any distribution with glibc 2.35 or newer. Each job then runs `scripts/binary_smoke.py` against the finished file: `--version`, `--help`, `self-check`, the printed MCP configuration, a real server with page and asset requests, a full MCP stdio session and a clean shutdown. A job that cannot pass this smoke test uploads nothing.
+
+`scripts/release_checksums.py` refuses to write `SHA256SUMS.txt` unless `dist/` holds exactly the wheel, the source archive and every executable for the tagged version, so an incomplete or stale release cannot be drafted.
+
+Known limits to review before publishing:
+
+- **Two targets are deliberately not built.** `windows-arm64` (runner `windows-11-arm`) and `macos-x64` (runner `macos-15-intel`) are missing because `cryptography` has no patched wheel for them. Windows arm64 wheels exist only for 46.0.0 to 46.0.3, and macOS Intel wheels stop at 48.0.1. Both ranges have published advisories, and a source build failed on the arm64 runner. A binary built from those versions would ship known vulnerabilities. Users on those systems install the wheel with Python or use Docker.
+- **To restore a target,** wait until `cryptography` 50 or newer publishes a wheel for it, add the matrix entry back in `.github/workflows/ci.yml`, and add the target to `BINARY_TARGETS` in `scripts/release_checksums.py`. A test fails if the two disagree. Every binary job runs `scripts/audit_dependencies.py` on its own bundled dependencies, so an unpatched build cannot pass.
+- **Runners are the only proof for Linux arm64 and macOS.** Docker emulation was unavailable here, so those builds were first exercised by their CI jobs. Read those job results, and run the executables on real hardware where you can.
+- **Not signed or notarised.** Windows users see SmartScreen and macOS users see Gatekeeper. See the signing sections below. Signing a Windows executable changes its bytes, so regenerate `SHA256SUMS.txt` afterwards.
+- **The Windows tray is not exercised by the smoke test.** The smoke test runs `serve`; the notification-area icon needs an interactive desktop. Start the Windows executable by hand and confirm the icon, the notification, **Open** and **Stop** before publishing.
 
 ## macOS CI build and release artifact
 

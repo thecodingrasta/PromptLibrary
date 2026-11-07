@@ -19,8 +19,18 @@ REQUIRED = [
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/workflows/ci.yml",
     "docs/mcp-tools.md",
+    "assets/screenshots/main-view.png",
+    "assets/screenshots/new-prompt.png",
+    "assets/screenshots/workflows.png",
+    "assets/screenshots/help-guide.png",
+    "assets/screenshots/mcp-access.png",
     "scripts/package_smoke.py",
     "scripts/docker_smoke.py",
+    "scripts/build_binary.py",
+    "scripts/binary_smoke.py",
+    "scripts/audit_dependencies.py",
+    "packaging/promptlibrary.spec",
+    "packaging/entry.py",
 ]
 
 
@@ -31,8 +41,13 @@ def main() -> None:
             errors.append("Missing: " + name)
     files = list(ROOT.glob("*.md")) + list((ROOT / "docs").glob("*.md"))
     for file in files:
-        for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", file.read_text()):
-            target = match[1].split("#", 1)[0]
+        text = file.read_text(encoding="utf-8")
+        # Markdown links and images, plus the HTML src/href attributes used for the
+        # README screenshot gallery, which Markdown-only matching would skip.
+        targets = [m[1] for m in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", text)]
+        targets += [m[1] for m in re.finditer(r"""(?:src|href)=["']([^"']+)["']""", text)]
+        for raw_target in targets:
+            target = raw_target.split("#", 1)[0]
             if not target or "://" in target or target.startswith("mailto:"):
                 continue
             if not (file.parent / unquote(target)).exists():

@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -15,6 +14,7 @@ from pathlib import Path
 from socket import AF_INET, SO_REUSEADDR, SOCK_STREAM, SOL_SOCKET, socket
 from typing import TYPE_CHECKING, Any, cast
 
+from promptlibrary import runtime
 from promptlibrary.config import settings
 
 if TYPE_CHECKING:
@@ -27,12 +27,15 @@ SERVER_ROLE_VALUE = "web-server"
 
 
 def _windows_interpreter() -> str:
-    interpreter = Path(sys.executable)
-    if os.name == "nt":
-        windowless = interpreter.with_name("pythonw.exe")
-        if windowless.exists():
-            return str(windowless)
-    return str(interpreter)
+    return runtime.interpreter(windowless=True)
+
+
+def _needs_process_tree_kill(
+    operating_system: str | None = None, frozen: bool | None = None
+) -> bool:
+    """A frozen Windows build runs its server as a child of a launcher process."""
+    system = os.name if operating_system is None else operating_system
+    return system == "nt" and (runtime.is_frozen() if frozen is None else frozen)
 
 
 def _acquire_tray_mutex() -> object | None:
@@ -174,8 +177,8 @@ class ServerController:
         environment["PROMPTLIB_PORT"] = str(self.port)
         creation_flags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
         self.process = subprocess.Popen(  # noqa: S603 - executable and arguments are local constants.
-            [_windows_interpreter(), "-m", "promptlibrary.app"],
-            cwd=str(Path(__file__).resolve().parents[2]),
+            runtime.child_command(runtime.SERVE, "promptlibrary.app", windowless=True),
+            cwd=None if runtime.is_frozen() else str(Path(__file__).resolve().parents[2]),
             env=environment,
             creationflags=creation_flags,
             stdin=subprocess.DEVNULL,
@@ -198,10 +201,33 @@ class ServerController:
             "The configured port may already be in use by another application."
         )
 
+    def _stop_process_tree(self) -> None:
+        """Stop the server, including the child that a one-file Windows executable starts.
+
+        A one-file PyInstaller executable on Windows is a launcher that runs the real
+        server as a child process. Terminating only the launcher would leave the server
+        holding its port, so end the whole tree for the frozen build.
+        """
+        process = self.process
+        if process is None:
+            return
+        if _needs_process_tree_kill():
+            taskkill = (
+                Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "taskkill.exe"
+            )
+            subprocess.run(  # noqa: S603 - fixed system executable and a numeric process id.
+                [str(taskkill), "/PID", str(process.pid), "/T", "/F"],
+                check=False,
+                capture_output=True,
+                creationflags=int(getattr(subprocess, "CREATE_NO_WINDOW", 0)),
+            )
+            return
+        process.terminate()
+
     def stop(self) -> None:
         if self.process is None:
             return
-        self.process.terminate()
+        self._stop_process_tree()
         try:
             self.process.wait(timeout=10)
         except subprocess.TimeoutExpired:
@@ -269,7 +295,8 @@ def main() -> None:
         controller.stop()
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Run the controller and show a dialog if it stops unexpectedly."""
     try:
         main()
     except Exception as error:
@@ -280,3 +307,7 @@ if __name__ == "__main__":
             error=True,
         )
         raise
+
+
+if __name__ == "__main__":
+    run()

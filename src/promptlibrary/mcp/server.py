@@ -5,10 +5,9 @@ import asyncio
 import json
 import os
 import sys
-from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
-from promptlibrary import __version__
+from promptlibrary import __version__, runtime
 from promptlibrary.config import settings
 from promptlibrary.database import get_db, init_db
 from promptlibrary.mcp import tools as tools  # Registers the annotated domain handlers.
@@ -64,50 +63,66 @@ async def read_resource(uri: str) -> str:
     raise ValueError("Unknown resource.")
 
 
-def _register_sdk_handler[SDKHandler: Callable[..., Awaitable[Any]]](
-    factory: Callable[..., Any], handler: SDKHandler, **options: bool
-) -> None:
-    # MCP 1.x registration factories have unannotated return types. Keep this SDK
-    # boundary local rather than making the handlers or domain services untyped.
-    register = cast(Callable[[SDKHandler], SDKHandler], factory(**options))
-    register(handler)
+def create_server() -> "Server[Any]":
+    import mcp.types as types
+    from mcp.server import Server, ServerRequestContext
 
-
-def create_server() -> "Server":
-    from mcp.server import Server
-    from mcp.types import CallToolResult, Resource, TextContent, Tool
-    from pydantic import AnyUrl
-
-    server = Server("promptlibrary")
-
-    async def sdk_list_tools() -> list[Tool]:
-        return [Tool.model_validate(definition.model_dump()) for definition in await list_tools()]
-
-    # The registry validates inputs without echoing rejected secrets in SDK errors.
-    async def sdk_call_tool(name: str, arguments: Record) -> CallToolResult:
-        payload, is_error = await execute_tool(name, arguments)
-        return CallToolResult(
-            content=[TextContent(type="text", text=item.text) for item in text_result(payload)],
-            isError=is_error,
+    async def on_list_tools(
+        ctx: ServerRequestContext[Any], params: types.PaginatedRequestParams | None
+    ) -> types.ListToolsResult:
+        return types.ListToolsResult(
+            tools=[
+                types.Tool.model_validate(definition.model_dump())
+                for definition in await list_tools()
+            ]
         )
 
-    async def sdk_list_resources() -> list[Resource]:
-        return [
-            Resource(uri=AnyUrl(uri), name=name, mimeType="application/json")
-            for uri, name in (
-                ("library://stats", "Library statistics"),
-                ("library://recent", "Recent prompts"),
-            )
-        ]
+    # The registry validates inputs without echoing rejected secrets in SDK errors.
+    async def on_call_tool(
+        ctx: ServerRequestContext[Any], params: types.CallToolRequestParams
+    ) -> types.CallToolResult:
+        payload, is_error = await execute_tool(params.name, params.arguments or {})
+        return types.CallToolResult(
+            content=[
+                types.TextContent(type="text", text=item.text) for item in text_result(payload)
+            ],
+            is_error=is_error,
+        )
 
-    async def sdk_read_resource(uri: AnyUrl) -> str:
-        return await read_resource(str(uri))
+    async def on_list_resources(
+        ctx: ServerRequestContext[Any], params: types.PaginatedRequestParams | None
+    ) -> types.ListResourcesResult:
+        return types.ListResourcesResult(
+            resources=[
+                types.Resource(uri=uri, name=name, mime_type="application/json")
+                for uri, name in (
+                    ("library://stats", "Library statistics"),
+                    ("library://recent", "Recent prompts"),
+                )
+            ]
+        )
 
-    _register_sdk_handler(server.list_tools, sdk_list_tools)
-    _register_sdk_handler(server.call_tool, sdk_call_tool, validate_input=False)
-    _register_sdk_handler(server.list_resources, sdk_list_resources)
-    _register_sdk_handler(server.read_resource, sdk_read_resource)
-    return server
+    async def on_read_resource(
+        ctx: ServerRequestContext[Any], params: types.ReadResourceRequestParams
+    ) -> types.ReadResourceResult:
+        return types.ReadResourceResult(
+            contents=[
+                types.TextResourceContents(
+                    uri=params.uri,
+                    mime_type="application/json",
+                    text=await read_resource(params.uri),
+                )
+            ]
+        )
+
+    return Server(
+        "promptlibrary",
+        version=__version__,
+        on_list_tools=on_list_tools,
+        on_call_tool=on_call_tool,
+        on_list_resources=on_list_resources,
+        on_read_resource=on_read_resource,
+    )
 
 
 async def _run() -> None:
@@ -130,7 +145,7 @@ def main(argv: list[str] | None = None) -> None:
         # Do not resolve an interpreter symlink: that would escape its virtual environment.
         entry = {
             "command": os.path.abspath(sys.executable),
-            "args": ["-m", "promptlibrary.mcp.server"],
+            "args": [runtime.MCP] if runtime.is_frozen() else ["-m", "promptlibrary.mcp.server"],
             "env": {
                 "PROMPTLIB_DATA_DIR": str(settings.data_dir.expanduser().resolve()),
                 "PROMPTLIB_DB_NAME": settings.db_name,

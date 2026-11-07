@@ -7,6 +7,7 @@ import aiosqlite
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 
+from promptlibrary import runtime
 from promptlibrary.database import get_db
 from promptlibrary.routers.common import page
 from promptlibrary.services.category_service import CategoryService
@@ -20,10 +21,14 @@ router = APIRouter(tags=["settings"])
 async def settings_page(
     request: Request, db: aiosqlite.Connection, message: str | None = None
 ) -> HTMLResponse:
+    mcp_command, mcp_arguments = runtime.mcp_client_command()
     return page(
         request,
         "pages/settings.html",
         {
+            "mcp_command": mcp_command,
+            "mcp_arguments": mcp_arguments,
+            "mcp_command_line": " ".join([mcp_command, *mcp_arguments]),
             "statuses": await StatusService(db).list_statuses(),
             "categories": await PromptService(db).list_categories(),
             "labels": await LabelService(db).list_labels(),

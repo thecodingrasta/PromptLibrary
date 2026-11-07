@@ -13,12 +13,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: distributions
           path: dist
-      - name: Verify version and write checksums
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: binary-*
+          path: dist
+          merge-multiple: true
+      - name: Verify the complete file set and write checksums
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: python scripts/release_checksums.py

@@ -64,6 +64,7 @@ def main() -> None:
             if enabled
         ]
         target = "." + ("[" + ",".join(extras) + "]" if extras else "")
+        run("-m", "pip", "install", "--upgrade", "pip")
         run("-m", "pip", "install", "-e", target)
         if arguments.browsers:
             run("-m", "playwright", "install", "chromium")
@@ -87,7 +88,7 @@ def main() -> None:
         if arguments.browsers:
             run("-m", "pytest", "-q", "tests/e2e", "--browser", "chromium")
         if arguments.security:
-            run("-m", "pip_audit", "--strict", "--skip-editable", "--progress-spinner", "off")
+            run("scripts/audit_dependencies.py")
 
 
 if __name__ == "__main__":

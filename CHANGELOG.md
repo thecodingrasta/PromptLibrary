@@ -1,6 +1,37 @@
 # Changelog
 
-## 1.0.0
+## 0.1.3
+
+### Standalone downloads
+
+Releases now include a standalone executable for Windows (x64), Linux (x64 and arm64)
+and macOS (Apple silicon), so the application runs without installing Python. One `promptlibrary`
+program provides the web interface, the Windows tray controller, the MCP stdio server
+(`promptlibrary mcp`), database maintenance and a `self-check`. The executables are
+built with PyInstaller on native runners and smoke-tested before they are uploaded.
+The release gate refuses to draft a release that is missing any of them. They are not
+yet code-signed or notarised; the README explains the first-run prompts. Windows on
+Arm and Intel Mac users install the wheel with Python or use Docker, because `cryptography`
+publishes no patched build for those two targets.
+
+### Documentation
+
+README and MCP usage now include screenshots of the library, prompt editor,
+workflow view, built-in guide and MCP settings. The duplicate `COPYING` file was
+removed; `LICENSE` is the single licence text.
+
+### Dependencies and CI
+
+Updated FastAPI, pydantic-settings, paramiko (5.1, which fixes the SHA-1 RSA
+advisory PYSEC-2026-2858), pip-audit and the MCP SDK (2.x, with the stdio server
+ported to constructor-registered handlers). Updated the GitHub Actions
+checkout, setup-python, upload-artifact and download-artifact majors. The
+dependency audit now covers every installed third-party distribution, including
+pip, through `scripts/audit_dependencies.py` instead of failing on the unpublished
+local package. The release-asset check now also validates HTML image and link
+targets and the documented screenshots.
+
+## 0.1.2
 
 ### Library and workflows
 
@@ -28,10 +59,10 @@ maintenance commands support larger libraries and recovery.
 
 ### Distribution
 
-Version and licence metadata aligned to 1.0.0 and GPL-3.0-or-later, retaining the
+Licence metadata aligned to GPL-3.0-or-later, retaining the
 original MIT notice. Source installation scripts, community files, configuration
 examples and release checks are included. PWA/offline browser, automated inference,
 automatic sync and unimplemented integrations are not advertised.
 
-This entry describes the 1.0.0 source changes. Publication and platform validation
+This entry describes the 0.1.2 source changes. Publication and platform validation
 are separate release gates; see docs/releasing.md.
